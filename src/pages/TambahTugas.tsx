@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { ProjectPicker } from '@/components/ProjectPicker'
+import { BatchAddAgenda } from '@/components/BatchAddAgenda'
+import { Toggle } from '@/components/Toggle'
 import type { Project } from '@/lib/types'
 
 // Pre-fill / linkage passed via router state (from Continue / + Revision Agenda).
@@ -25,6 +27,7 @@ export function TambahTugas() {
 
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [batch, setBatch] = useState(false)
 
   const canSave = name.trim().length > 0 && project !== null && !saving
 
@@ -62,8 +65,18 @@ export function TambahTugas() {
 
   return (
     <div className="space-y-4 pb-4">
-      <h2 className="text-xl font-semibold text-slate-900">New Agenda</h2>
+      <div className="flex items-center justify-between rounded-2xl border border-white/40 bg-white/70 px-4 py-3 shadow-glass">
+        <div>
+          <p className="text-sm font-semibold text-slate-800">Morning DSU</p>
+          <p className="text-xs text-slate-500">Add several agendas at once.</p>
+        </div>
+        <Toggle checked={batch} onChange={setBatch} label="Morning DSU" />
+      </div>
 
+      {batch ? (
+        <BatchAddAgenda />
+      ) : (
+        <>
       <div>
         <label className="mb-1.5 block text-sm font-medium text-slate-700">Agenda name</label>
         <input
@@ -114,6 +127,8 @@ export function TambahTugas() {
       >
         {saving ? 'Saving…' : 'Save'}
       </button>
+        </>
+      )}
     </div>
   )
 }

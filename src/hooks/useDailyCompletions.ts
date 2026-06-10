@@ -7,9 +7,17 @@ interface Member {
   name: string
 }
 
+// Donut counts: In Progress + Awaiting Approval are the live set; Done is last-14-days.
+export interface StatusCounts {
+  in_progress: number
+  awaiting_approval: number
+  done: number
+}
+
 interface DailyCompletionsState {
   members: Member[]
   completions: DailyCompletion[]
+  statusCounts: StatusCounts
   loading: boolean
   error: string | null
 }
@@ -22,6 +30,7 @@ export function useDailyCompletions(): DailyCompletionsState {
   const [state, setState] = useState<DailyCompletionsState>({
     members: [],
     completions: [],
+    statusCounts: { in_progress: 0, awaiting_approval: 0, done: 0 },
     loading: true,
     error: null,
   })
@@ -31,7 +40,7 @@ export function useDailyCompletions(): DailyCompletionsState {
 
     async function load() {
       const cutoff = new Date(Date.now() - WINDOW_DAYS * 86_400_000).toISOString()
-      const [membersRes, completionsRes] = await Promise.all([
+      const [membersRes, completionsRes, openRes] = await Promise.all([
         supabase.from('profiles').select('id, name').order('name'),
         supabase
           .from('tasks')
@@ -42,16 +51,25 @@ export function useDailyCompletions(): DailyCompletionsState {
           .eq('status', 'done')
           .gte('completed_at', cutoff)
           .order('completed_at', { ascending: false }),
+        // Live (non-done) status counts for the donut.
+        supabase.from('tasks').select('status').in('status', ['on_progress', 'awaiting_approval']),
       ])
 
       if (!active) return
-      if (membersRes.error || completionsRes.error) {
-        setState((s) => ({ ...s, loading: false, error: 'Couldn’t load completions.' }))
+      if (membersRes.error || completionsRes.error || openRes.error) {
+        setState((s) => ({ ...s, loading: false, error: 'Couldn’t load dashboard data.' }))
         return
       }
+      const completions = (completionsRes.data ?? []) as unknown as DailyCompletion[]
+      const open = (openRes.data ?? []) as { status: string }[]
       setState({
         members: (membersRes.data ?? []) as Member[],
-        completions: (completionsRes.data ?? []) as unknown as DailyCompletion[],
+        completions,
+        statusCounts: {
+          in_progress: open.filter((t) => t.status === 'on_progress').length,
+          awaiting_approval: open.filter((t) => t.status === 'awaiting_approval').length,
+          done: completions.length,
+        },
         loading: false,
         error: null,
       })

@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { useDailyCompletions } from '@/hooks/useDailyCompletions'
+import { DashboardCharts } from '@/components/DashboardCharts'
 import { Badge, Card } from '@/components/ui'
 import { localDateISO } from '@/lib/dates'
 import type { DailyCompletion } from '@/lib/types'
@@ -39,7 +40,7 @@ function groupByDay(items: DailyCompletion[]): DayGroup[] {
 
 export function Dashboard() {
   const { effectiveRole } = useAuth()
-  const { members, completions, loading, error } = useDailyCompletions()
+  const { members, completions, statusCounts, loading, error } = useDailyCompletions()
 
   const byMember = useMemo(
     () =>
@@ -66,6 +67,14 @@ export function Dashboard() {
 
       {loading && <p className="pt-6 text-center text-sm text-slate-400">Loading…</p>}
       {error && <p className="pt-6 text-center text-sm text-red-600">{error}</p>}
+
+      {!loading && !error && (
+        <DashboardCharts
+          completions={completions}
+          members={members}
+          statusCounts={statusCounts}
+        />
+      )}
 
       {!loading &&
         !error &&

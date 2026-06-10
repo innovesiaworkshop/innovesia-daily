@@ -9,6 +9,7 @@ import { DetailProyek } from '@/pages/DetailProyek'
 import { ProyekList } from '@/pages/ProyekList'
 import { TambahTugas } from '@/pages/TambahTugas'
 import { Dashboard } from '@/pages/Dashboard'
+import { ReloadPrompt } from '@/components/ReloadPrompt'
 
 // Decides what to render once auth has resolved. Employees and employers share the
 // same home for now.
@@ -46,6 +47,7 @@ export default function App() {
   return (
     <AuthProvider>
       <Gate />
+      <ReloadPrompt />
     </AuthProvider>
   )
 }

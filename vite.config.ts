@@ -8,11 +8,16 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // 'prompt' so a new SW waits and we can show a "reload" prompt instead of a silent reload.
+      registerType: 'prompt',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
+      // Precache the full shell (fonts + images) so installs aren't missing assets.
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+      },
       manifest: {
         name: 'Innovesia Daily',
-        short_name: 'Daily',
+        short_name: 'Innovesia',
         description: 'Daily task log for the Innovesia team.',
         lang: 'en',
         start_url: '/',

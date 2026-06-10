@@ -9,12 +9,22 @@ const dayFormatter = new Intl.DateTimeFormat('en-GB', {
   month: 'long',
 })
 
+// Header title per page (exact path; detail routes show no title — they have back headers).
+const PAGE_TITLES: Record<string, string> = {
+  '/': 'Daily Stand-Up',
+  '/tambah': 'New Agenda',
+  '/proyek': 'Projects',
+  '/dashboard': 'Dashboard',
+}
+
 // Mobile-first app shell: a frozen brand header (which carries the home screen title),
 // a scrollable content area (`main` is the only scroller), and a bottom nav. Content is
 // capped at max-w-md and centered so it stays phone-width on larger screens.
 export function Layout() {
   const { profile, signOut } = useAuth()
-  const isHome = useLocation().pathname === '/'
+  const pathname = useLocation().pathname
+  const isHome = pathname === '/'
+  const pageTitle = PAGE_TITLES[pathname]
 
   return (
     <div className="relative mx-auto flex h-full max-w-md flex-col overflow-hidden">
@@ -31,10 +41,12 @@ export function Layout() {
             {profile && (
               <p className="truncate text-xs text-slate-500">Hi, {profile.name || 'there'}</p>
             )}
-            {isHome && (
+            {pageTitle && (
               <>
-                <h2 className="text-xl font-bold tracking-tight text-slate-900">Daily Stand-Up</h2>
-                <p className="text-xs text-slate-500">{dayFormatter.format(new Date())}</p>
+                <h2 className="text-xl font-bold tracking-tight text-slate-900">{pageTitle}</h2>
+                {isHome && (
+                  <p className="text-xs text-slate-500">{dayFormatter.format(new Date())}</p>
+                )}
               </>
             )}
           </div>

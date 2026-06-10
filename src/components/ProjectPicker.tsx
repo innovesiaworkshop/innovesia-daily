@@ -84,16 +84,19 @@ export function ProjectPicker({
       />
 
       <div className="mt-1.5 overflow-hidden rounded-xl border border-slate-200">
-        {filtered.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            onClick={() => onChange(p)}
-            className="block w-full border-b border-slate-100 px-3.5 py-2.5 text-left text-slate-800 last:border-b-0 active:bg-slate-50"
-          >
-            {p.name}
-          </button>
-        ))}
+        {/* Scrollable list — shows ~3 projects, the rest scroll. */}
+        <div className="max-h-[8.25rem] overflow-y-auto">
+          {filtered.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => onChange(p)}
+              className="block w-full border-b border-slate-100 px-3.5 py-2.5 text-left text-slate-800 last:border-b-0 active:bg-slate-50"
+            >
+              {p.name}
+            </button>
+          ))}
+        </div>
 
         {canCreate && (
           <button

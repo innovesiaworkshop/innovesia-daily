@@ -22,8 +22,6 @@ export function ProyekList() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-semibold text-slate-900">Projects</h2>
-
       {/* Scope toggle. */}
       <div
         role="group"
