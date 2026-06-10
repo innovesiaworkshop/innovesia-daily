@@ -19,7 +19,7 @@ export function RoleSwitcher() {
     <div
       role="group"
       aria-label="View as"
-      className="flex rounded-lg bg-white/15 p-0.5 text-xs font-medium"
+      className="flex rounded-full border border-white/50 bg-white/40 p-0.5 text-xs font-medium backdrop-blur"
     >
       {SEGMENTS.map(({ role, label }) => {
         const active = effectiveRole === role
@@ -29,8 +29,8 @@ export function RoleSwitcher() {
             type="button"
             aria-pressed={active}
             onClick={() => setViewAsRole(role)}
-            className={`rounded-md px-2.5 py-1 transition ${
-              active ? 'bg-white text-navy' : 'text-white/80'
+            className={`rounded-full px-3 py-1 transition ${
+              active ? 'bg-white/80 text-navy shadow-sm' : 'text-slate-500'
             }`}
           >
             {label}

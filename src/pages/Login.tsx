@@ -31,26 +31,41 @@ export function Login() {
   }
 
   return (
-    <div className="mx-auto flex min-h-full max-w-md flex-col items-center justify-center bg-white px-6 text-center">
-      <div className="mb-10">
-        <img src="/favicon.svg" alt="Innovesia Daily" className="mx-auto mb-5 h-20 w-20" />
-        <h1 className="text-2xl font-semibold text-navy">Innovesia Daily</h1>
-        <p className="mt-2 text-sm text-slate-500">Log your daily tasks in seconds.</p>
+    <div className="relative mx-auto flex h-full max-w-md flex-col overflow-hidden bg-cloud">
+      {/* Full-bleed background photo. */}
+      <img
+        src="/login-background.png"
+        alt=""
+        aria-hidden
+        className="absolute inset-0 h-full w-full object-cover"
+      />
+      {/* Light scrim from the top so the dark logo / navy wordmark / button stay legible. */}
+      <div className="absolute inset-0 bg-gradient-to-b from-white/90 via-white/55 to-white/10" />
+
+      <div className="relative z-10 flex flex-1 flex-col px-7 pt-[calc(env(safe-area-inset-top)+4rem)]">
+        <h1 className="text-5xl font-extrabold leading-[1.04] tracking-tight text-navy">
+          Innovesia
+          <br />
+          <span className="font-light italic">Daily</span>
+        </h1>
+        <p className="mt-3 text-sm font-medium text-slate-600">
+          Log your daily agenda in seconds.
+        </p>
+
+        {/* Sign-in pinned toward the bottom. */}
+        <div className="mt-auto pb-[calc(env(safe-area-inset-bottom)+2.5rem)]">
+          <button
+            type="button"
+            onClick={handleSignIn}
+            disabled={busy}
+            className="flex w-full items-center justify-center gap-3 rounded-full border border-white/60 bg-white/90 px-5 py-3.5 text-base font-semibold text-slate-800 shadow-glass backdrop-blur transition active:scale-[0.99] disabled:opacity-60"
+          >
+            <GoogleIcon className="h-5 w-5" />
+            {busy ? 'Redirecting…' : 'Sign in with Google'}
+          </button>
+          {error && <p className="mt-3 text-center text-sm text-red-600">{error}</p>}
+        </div>
       </div>
-
-      <button
-        type="button"
-        onClick={handleSignIn}
-        disabled={busy}
-        className="flex w-full items-center justify-center gap-3 rounded-xl bg-navy px-5 py-3.5 text-base font-semibold text-white shadow-sm transition active:scale-[0.99] disabled:opacity-60"
-      >
-        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white">
-          <GoogleIcon className="h-4 w-4" />
-        </span>
-        {busy ? 'Redirecting…' : 'Sign in with Google'}
-      </button>
-
-      {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
     </div>
   )
 }

@@ -15,7 +15,7 @@ export interface Project {
 
 export type TaskStatus = 'awaiting_approval' | 'on_progress' | 'done'
 
-export type ApprovalState = 'na' | 'pending' | 'approved'
+export type ApprovalState = 'na' | 'pending' | 'approved' | 'revision_requested'
 
 // A task row joined with its project name, as listed on the home screen.
 export interface TaskWithProject {
@@ -24,8 +24,11 @@ export interface TaskWithProject {
   project_id: string
   due_date: string | null
   status: TaskStatus
+  approval_state: ApprovalState
+  // The manager's revision text; read by the "+ Revision Agenda" flow.
+  revision_note: string | null
   // Daily-planner fields: planned_for drives the Today/backlog split (null = backlog);
-  // completed_at timestamps a completion so "Selesai Hari Ini" can reset each day.
+  // completed_at timestamps a completion so "Completed" can reset each day.
   planned_for: string | null
   completed_at: string | null
   project: { name: string } | null
@@ -42,6 +45,10 @@ export interface TaskDetail {
   status: TaskStatus
   needs_approval: boolean
   approval_state: ApprovalState
+  description: string | null
+  revision_note: string | null
+  planned_for: string | null
+  completed_at: string | null
   project: { name: string } | null
   pic: { name: string } | null
 }
@@ -70,25 +77,24 @@ export interface TaskComment {
   author: { name: string } | null
 }
 
-// A task surfaced in the employer's "Perlu Tindakan" queue (awaiting approval or overdue).
-export interface ActionTask {
+// A completed agenda on the Dashboard "Daily Completions" view, with its PIC + project.
+export interface DailyCompletion {
+  id: string
+  name: string
+  completed_at: string
+  project: { name: string } | null
+  pic: { id: string; name: string } | null
+}
+
+// A card in the manager's "Kickstart Your Day" swipe stack: a pending approval or an overdue
+// agenda. Approval cards carry files (for "View file"); overdue cards use due_date.
+export interface StackItem {
+  kind: 'approval' | 'overdue'
   id: string
   name: string
   project_id: string
   pic_id: string
   due_date: string | null
-  status: TaskStatus
-  approval_state: ApprovalState
-  pic: { name: string } | null
-  project: { name: string } | null
-}
-
-// A pending-approval task on the employer home section, with its files for "Lihat berkas".
-export interface PendingApprovalTask {
-  id: string
-  name: string
-  project_id: string
-  pic_id: string
   pic: { name: string } | null
   project: { name: string } | null
   files: { id: string; file_path: string; file_name: string }[]

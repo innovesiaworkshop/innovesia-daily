@@ -23,6 +23,11 @@ export function TaskFiles({
   const [error, setError] = useState<string | null>(null)
 
   async function handleUpload(file: File) {
+    // PDF only.
+    if (file.type !== 'application/pdf') {
+      setError('Only PDF files are allowed.')
+      return
+    }
     setUploading(true)
     setError(null)
     // Keep files namespaced per task; prefix with a timestamp to avoid collisions.
@@ -86,6 +91,7 @@ export function TaskFiles({
           <input
             ref={inputRef}
             type="file"
+            accept="application/pdf"
             className="hidden"
             onChange={(e) => {
               const file = e.target.files?.[0]
@@ -99,7 +105,7 @@ export function TaskFiles({
             disabled={uploading}
             className="w-full rounded-xl border border-dashed border-slate-300 py-2.5 text-sm font-medium text-navy active:bg-slate-50 disabled:opacity-60"
           >
-            {uploading ? 'Uploading…' : '+ Upload file'}
+            {uploading ? 'Uploading…' : '+ Upload PDF'}
           </button>
         </>
       )}

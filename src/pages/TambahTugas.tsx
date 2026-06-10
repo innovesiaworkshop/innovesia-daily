@@ -1,20 +1,27 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { ProjectPicker } from '@/components/ProjectPicker'
-import { Toggle } from '@/components/Toggle'
 import type { Project } from '@/lib/types'
+
+// Pre-fill / linkage passed via router state (from Continue / + Revision Agenda).
+interface AddState {
+  presetProject?: Project
+  presetName?: string
+  presetDescription?: string
+  closeOriginId?: string
+}
 
 export function TambahTugas() {
   const { profile } = useAuth()
   const navigate = useNavigate()
+  const preset = (useLocation().state as AddState | null) ?? {}
 
-  const [name, setName] = useState('')
-  const [project, setProject] = useState<Project | null>(null)
+  const [name, setName] = useState(preset.presetName ?? '')
+  const [project, setProject] = useState<Project | null>(preset.presetProject ?? null)
+  const [description, setDescription] = useState(preset.presetDescription ?? '')
   const [dueDate, setDueDate] = useState('')
-  const [mintaApproval, setMintaApproval] = useState(false)
-  const [showDetail, setShowDetail] = useState(false)
 
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -26,33 +33,39 @@ export function TambahTugas() {
     setSaving(true)
     setError(null)
 
-    // Approval is opt-in (see CLAUDE.md). start_date defaults to current_date in the DB.
+    // New agenda defaults to Today: DB gives status=on_progress, planned_for=today,
+    // approval_state='na'.
     const { error: insErr } = await supabase.from('tasks').insert({
       name: name.trim(),
       project_id: project.id,
       pic_id: profile.id,
       due_date: dueDate || null,
-      needs_approval: mintaApproval,
-      status: mintaApproval ? 'awaiting_approval' : 'on_progress',
-      approval_state: mintaApproval ? 'pending' : 'na',
+      description: description.trim() || null,
     })
-
-    setSaving(false)
     if (insErr) {
+      setSaving(false)
       setError("Couldn't save. Try again.")
       return
     }
 
-    // Head back home; the toast confirmation rides along in router state.
+    // Revision flow: close the original agenda now that its revision exists.
+    if (preset.closeOriginId) {
+      await supabase
+        .from('tasks')
+        .update({ status: 'done', completed_at: new Date().toISOString() })
+        .eq('id', preset.closeOriginId)
+    }
+
+    setSaving(false)
     navigate('/', { state: { toast: 'Saved ✓' } })
   }
 
   return (
     <div className="space-y-4 pb-4">
-      <h2 className="text-xl font-semibold text-slate-900">Add Task</h2>
+      <h2 className="text-xl font-semibold text-slate-900">New Agenda</h2>
 
       <div>
-        <label className="mb-1.5 block text-sm font-medium text-slate-700">Task name</label>
+        <label className="mb-1.5 block text-sm font-medium text-slate-700">Agenda name</label>
         <input
           autoFocus
           type="text"
@@ -68,38 +81,27 @@ export function TambahTugas() {
         <ProjectPicker value={project} onChange={setProject} />
       </div>
 
-      {/* Optional details, collapsed by default to keep the form fast. */}
-      <div className="rounded-xl border border-slate-200">
-        <button
-          type="button"
-          onClick={() => setShowDetail((s) => !s)}
-          className="flex w-full items-center justify-between px-3.5 py-3 text-left text-sm font-medium text-slate-700"
-        >
-          Details (optional)
-          <span className={`transition-transform ${showDetail ? 'rotate-180' : ''}`}>⌄</span>
-        </button>
+      <div>
+        <label className="mb-1.5 block text-sm font-medium text-slate-700">
+          Description (optional)
+        </label>
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={3}
+          placeholder="Add any detail…"
+          className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-navy"
+        />
+      </div>
 
-        {showDetail && (
-          <div className="space-y-4 border-t border-slate-100 px-3.5 py-3.5">
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-700">Due</label>
-              <input
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 outline-none focus:border-navy"
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-700">Request Approval</p>
-                <p className="text-xs text-slate-400">The task will await approval.</p>
-              </div>
-              <Toggle checked={mintaApproval} onChange={setMintaApproval} label="Request Approval" />
-            </div>
-          </div>
-        )}
+      <div>
+        <label className="mb-1.5 block text-sm font-medium text-slate-700">Due (optional)</label>
+        <input
+          type="date"
+          value={dueDate}
+          onChange={(e) => setDueDate(e.target.value)}
+          className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 outline-none focus:border-navy"
+        />
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
@@ -108,7 +110,7 @@ export function TambahTugas() {
         type="button"
         onClick={() => void handleSave()}
         disabled={!canSave}
-        className="sticky bottom-20 w-full rounded-xl bg-navy py-3.5 text-base font-semibold text-white shadow-sm transition active:scale-[0.99] disabled:opacity-50"
+        className="w-full rounded-full bg-navy py-3.5 text-base font-semibold text-white shadow-pill transition active:scale-[0.99] disabled:opacity-50"
       >
         {saving ? 'Saving…' : 'Save'}
       </button>

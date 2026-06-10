@@ -27,7 +27,8 @@ export function useMyTasks(): MyTasksHook {
     const { data, error } = await supabase
       .from('tasks')
       .select(
-        'id, name, project_id, due_date, status, planned_for, completed_at, project:projects(name)',
+        'id, name, project_id, due_date, status, approval_state, revision_note, ' +
+          'planned_for, completed_at, project:projects(name)',
       )
       .eq('pic_id', uid)
       .order('due_date', { ascending: true, nullsFirst: false })

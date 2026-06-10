@@ -25,7 +25,11 @@ export function ProyekList() {
       <h2 className="text-xl font-semibold text-slate-900">Projects</h2>
 
       {/* Scope toggle. */}
-      <div role="group" aria-label="Project scope" className="flex rounded-xl bg-slate-100 p-1">
+      <div
+        role="group"
+        aria-label="Project scope"
+        className="flex rounded-full border border-white/50 bg-white/40 p-1 backdrop-blur"
+      >
         {SEGMENTS.map(({ scope: s, label }) => {
           const active = scope === s
           return (
@@ -34,8 +38,8 @@ export function ProyekList() {
               type="button"
               aria-pressed={active}
               onClick={() => setScope(s)}
-              className={`flex-1 rounded-lg py-2 text-sm font-medium transition ${
-                active ? 'bg-white text-navy shadow-sm' : 'text-slate-500'
+              className={`flex-1 rounded-full py-2 text-sm font-medium transition ${
+                active ? 'bg-white/80 text-navy shadow-sm' : 'text-slate-500'
               }`}
             >
               {label}

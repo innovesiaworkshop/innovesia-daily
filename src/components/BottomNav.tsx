@@ -30,15 +30,6 @@ function FolderIcon({ className }: IconProps) {
   )
 }
 
-function InboxIcon({ className }: IconProps) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 12h5l2 3h4l2-3h5" />
-      <path d="M5 5h14l2 7v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-6Z" />
-    </svg>
-  )
-}
-
 function ChartIcon({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -55,12 +46,10 @@ type NavItem = {
   employerOnly?: boolean
 }
 
-// Labels are in Bahasa Indonesia per CLAUDE.md.
 const items: NavItem[] = [
-  { to: '/', label: 'Tasks', Icon: HomeIcon },
-  { to: '/tambah', label: 'Add Task', Icon: PlusIcon },
+  { to: '/', label: 'Agenda', Icon: HomeIcon },
+  { to: '/tambah', label: 'Add', Icon: PlusIcon },
   { to: '/proyek', label: 'Projects', Icon: FolderIcon },
-  { to: '/perlu-tindakan', label: 'To Review', Icon: InboxIcon, employerOnly: true },
   { to: '/dashboard', label: 'Dashboard', Icon: ChartIcon, employerOnly: true },
 ]
 
@@ -69,21 +58,25 @@ export function BottomNav() {
   const visible = items.filter((item) => !item.employerOnly || effectiveRole === 'employer')
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)]">
-      <ul className="mx-auto flex max-w-md items-stretch justify-around">
+    <nav className="absolute inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-20 rounded-full border border-white/50 bg-white/70 px-1.5 py-1.5 shadow-glass backdrop-blur-md">
+      <ul className="flex items-stretch justify-around">
         {visible.map(({ to, label, Icon }) => (
           <li key={to} className="flex-1">
             <NavLink
               to={to}
               end={to === '/'}
-              className={({ isActive }) =>
-                `flex flex-col items-center gap-1 py-2 text-xs font-medium transition-colors ${
-                  isActive ? 'text-navy' : 'text-slate-400'
-                }`
-              }
+              aria-label={label}
+              className="flex items-center justify-center py-1"
             >
-              <Icon className="h-6 w-6" />
-              <span>{label}</span>
+              {({ isActive }) => (
+                <span
+                  className={`grid h-12 w-12 place-items-center rounded-full transition ${
+                    isActive ? 'bg-navy text-white shadow-pill' : 'text-slate-400'
+                  }`}
+                >
+                  <Icon className="h-6 w-6" />
+                </span>
+              )}
             </NavLink>
           </li>
         ))}

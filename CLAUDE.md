@@ -16,11 +16,25 @@ The #1 rule: logging a task must take under 15 seconds. Simplicity beats feature
 ALL user-facing text is in English (see the terminology glossary below). Code/comments in English.
 
 ## Brand colors (use these, set as Tailwind theme tokens)
-- navy #1f52a5  (primary buttons, headers, active)
+- navy #1f52a5  (primary buttons / CTAs, active, wordmark)
 - sky  #14b4e8  (accents, links, secondary)
-- gold #ffce0f  (highlights, pending/needs-action badges)
-- white #ffffff (backgrounds)
-Clean, flat, lots of white space. Mobile-first. No gradients.
+- gold #ffce0f  (highlights, pending / needs-action badges)
+- cloud #d4d9dd (app canvas behind the glass)
+
+## Design language: frosted glass (mobile-first)
+- Canvas #d4d9dd with an understated low-opacity sky/navy tint behind content (NO green —
+  brand palette only).
+- Cards are FROSTED GLASS: semi-transparent white, a 1px translucent white top-edge highlight
+  (`shadow-glass`), soft shadow, rounded-2xl/3xl. Use the `ui/Card` primitive: default = plain
+  semi-opaque glass (`bg-white/80`, no blur — for scrolling lists); `blur` = `backdrop-blur-md`
+  (header, swipe-stack cards, dialogs). Use backdrop-blur JUDICIOUSLY — never on long lists.
+- Segmented controls + toggles use the glass-pill treatment: `bg-white/40 backdrop-blur` track,
+  active segment `bg-white/80 text-navy shadow-sm` (or solid navy for the primary status control).
+- Header is a translucent LIGHT glass bar with the (dark) `logo.png` + an italic "daily" wordmark
+  centered; navy headers are avoided (the logo is dark). Font: Plus Jakarta Sans.
+- Login: full-bleed `public/login-background.png` under a LIGHT scrim so the dark logo/navy
+  wordmark/button stay legible.
+- Primary CTAs stay solid navy pills for contrast. Text must stay fully legible over glass.
 
 ## Roles
 - employee: create projects, log tasks, tag teammates, request approval (optional),
@@ -47,29 +61,32 @@ same PIC/project, carries the comment over, and marks the original done. There i
 task.planned_for: date (default current_date) — which day a task is scheduled for. NULL = backlog.
 task.completed_at: timestamptz — set to now() when a task is marked done; powers the daily reset.
 
-## Home sections (Tugas Saya — a daily planner, in this top-to-bottom order)
-1. "Menunggu Approval" — status=awaiting_approval. Collapsible, with a count.
-2. "Dikerjakan Hari Ini" — status=on_progress AND planned_for <= today. Unfinished tasks
-   from earlier days ROLL OVER into today and stay here until done.
-3. "Semua To-Do" (backlog) — status=on_progress AND (planned_for IS NULL OR planned_for > today).
-4. "Selesai Hari Ini" — status=done AND completed_at::date = today. "Done" RESETS DAILY:
-   only today's completions show; full history is behind a "Lihat semua selesai" button
-   (all done tasks, completed_at desc, each with its completion date).
-Move between Today and backlog by TAP (no drag): "Pindah ke To-Do" sets planned_for=NULL;
-"Kerjakan hari ini" sets planned_for=current_date. Completing a task asks for confirmation,
-then sets status=done + completed_at=now().
+## Home ("Daily Stand-Up" — a daily planner). The top header block (title + date + "+ Agenda")
+## is FROZEN (sticky); only the sections scroll. A pinned right-edge shortcut rail jumps to them.
+1. "Waiting for Approval" — status=awaiting_approval. Collapsible, with a count.
+2. "Today's Agenda" — status=on_progress AND planned_for <= today. Unfinished items
+   from earlier days ROLL OVER into today and stay here until completed.
+3. "All Agenda" (backlog) — status=on_progress AND (planned_for IS NULL OR planned_for > today).
+4. "Completed" — status=done AND completed_at::date = today. RESETS DAILY: only today's
+   completions show; full history is behind a "View all completed" button (completed_at desc).
+Move between Today's Agenda and All Agenda by TAP (no drag): "Move to All Agenda" sets
+planned_for=NULL; "Move to Today's Agenda" sets planned_for=current_date. Completing an agenda
+asks for confirmation, then sets status=done + completed_at=now().
+Employer home: a "Kickstart Your Day" section (all members' pending approvals) above the
+personal planner.
 
 
 
 ## UI language: English. Terminology (use these exact terms):
-Innovesia Daily (brand, keep) · Tasks (nav) · "My Day" (home) · Add Task · Projects ·
-To Review (was Perlu Tindakan) · Dashboard · Log out · Hi, <name> ·
-Employee / Manager (role switcher) · Awaiting Approval · In Progress · Done · Overdue ·
-Today / Backlog / Done Today (home sections) · "Move to Backlog" / "Move to Today" ·
-Due · No due date · Files · Upload file · View file · Teammates · Tag a teammate ·
-Comments · Request Approval · Approve · "Approved by manager" · Request Revision ·
-"Revision: <name>" · My Projects / All Projects · Closed Projects · New Project.
-Empty states like "No tasks yet.", "No projects yet."
+A work item is an "agenda" (was "task"). Innovesia Daily (brand, keep) · Agenda (home nav) ·
+"Daily Stand-Up" (home title) · "+ Agenda" / "New Agenda" (add) · Projects · To Review ·
+Dashboard · Log out · Hi, <name> · Employee / Manager (role switcher) ·
+Waiting for Approval · In Progress · Completed · Warning (derived-overdue badge) ·
+Today's Agenda / All Agenda / Completed (home sections) · "Kickstart Your Day" (employer home) ·
+"Move to All Agenda" / "Move to Today's Agenda" · Due · No due date · Files · Upload file ·
+View file · Teammates · Tag a teammate · Comments · Request Approval · Approve ·
+"Approved by manager" · Request Revision · "Revision: <name>" · My Projects / All Projects ·
+New Project. Empty states like "No agenda yet.", "No projects yet."
 
 ## Conventions
 - Use Supabase realtime for live updates.

@@ -20,7 +20,7 @@ export function RevisionDialog({
       onClick={onCancel}
     >
       <div
-        className="w-full max-w-xs rounded-2xl bg-white p-5 shadow-xl"
+        className="w-full max-w-xs rounded-3xl border border-white/50 bg-white/80 p-5 shadow-glass backdrop-blur-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <p className="text-base font-semibold text-slate-900">Request Revision</p>

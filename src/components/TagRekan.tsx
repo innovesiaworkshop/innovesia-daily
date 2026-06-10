@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/hooks/useAuth'
 import type { Profile, TaskTag } from '@/lib/types'
 
-// Tagged teammates on a task. Shows current tags as removable chips and an
-// "+ Tag rekan" picker over profiles that aren't already the PIC or tagged.
+// Notify teammates (CC) on a task. Shows current notified teammates as removable chips and a
+// picker over profiles that aren't already the PIC or tagged; adding one drops a system
+// comment so the notification is visible in the thread.
 export function TagRekan({
   taskId,
   picId,
@@ -15,6 +17,7 @@ export function TagRekan({
   tags: TaskTag[]
   reloadTags: () => Promise<void>
 }) {
+  const { profile } = useAuth()
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [adding, setAdding] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -34,6 +37,13 @@ export function TagRekan({
   async function addTag(userId: string) {
     setBusy(true)
     await supabase.from('task_tags').insert({ task_id: taskId, user_id: userId })
+    // Drop a system comment so the CC is visible in the thread.
+    const name = profiles.find((p) => p.id === userId)?.name || 'a teammate'
+    if (profile) {
+      await supabase
+        .from('comments')
+        .insert({ task_id: taskId, author_id: profile.id, body: `🔔 Notified ${name} (CC)` })
+    }
     await reloadTags()
     setBusy(false)
     setAdding(false)
@@ -75,7 +85,7 @@ export function TagRekan({
           onClick={() => setAdding(true)}
           className="text-sm font-medium text-navy"
         >
-          + Tag a teammate
+          + Notify teammate
         </button>
       )}
 

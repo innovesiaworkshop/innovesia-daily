@@ -10,9 +10,9 @@ export interface ApprovableTask {
   pic_id: string
 }
 
-// Shared Approve / Minta Revisi handlers + dialog state, reused by Perlu Tindakan, Detail
-// Tugas, and the employer home approvals section. Pass `onDone` to refresh a screen that
-// isn't already kept live by its own tasks realtime (e.g. Detail Tugas → reloadTask).
+// Shared manager Approve / Request Revision handlers + dialog state, reused by Detail Tugas
+// and the Home approval stack. Pass `onDone` to refresh a screen that isn't already kept live
+// by its own tasks realtime (e.g. Detail Tugas → reloadTask).
 export function useApprovalActions(onDone?: () => void) {
   const { profile } = useAuth()
   const [approveTarget, setApproveTarget] = useState<ApprovableTask | null>(null)
@@ -25,16 +25,17 @@ export function useApprovalActions(onDone?: () => void) {
     setReviseTarget(null)
   }
 
+  // Approve: keep status='awaiting_approval' so it stays in the PIC's Awaiting section as
+  // "Approved" (with Done / Continue). Only the approval_state changes.
   async function confirmApprove() {
     if (!approveTarget || !profile) return
     setBusy(true)
     setError(null)
     const { error: updErr } = await supabase
       .from('tasks')
-      .update({ approval_state: 'approved', status: 'on_progress' })
+      .update({ approval_state: 'approved' })
       .eq('id', approveTarget.id)
     if (!updErr) {
-      // Notify the PIC via a comment in their task thread.
       await supabase.from('comments').insert({
         task_id: approveTarget.id,
         author_id: profile.id,
@@ -44,51 +45,31 @@ export function useApprovalActions(onDone?: () => void) {
     setBusy(false)
     setApproveTarget(null)
     if (updErr) {
-      setError("Couldn't approve task. Try again.")
+      setError("Couldn't approve. Try again.")
       return
     }
     onDone?.()
   }
 
+  // Request Revision: mark revision_requested, store the note on the task (read by the PIC's
+  // "+ Revision Agenda" flow) and also as a comment in the thread.
   async function confirmRevise(comment: string) {
     if (!reviseTarget || !profile) return
     setBusy(true)
     setError(null)
-
-    // 1. New linked task for the same PIC (planned_for defaults to today).
-    const { data: created, error: insErr } = await supabase
-      .from('tasks')
-      .insert({
-        name: `Revision: ${reviseTarget.name}`,
-        project_id: reviseTarget.project_id,
-        pic_id: reviseTarget.pic_id,
-        needs_approval: false,
-        status: 'on_progress',
-        approval_state: 'na',
-      })
-      .select('id')
-      .single()
-
-    if (insErr || !created) {
-      setBusy(false)
-      setError("Couldn't create revision task. Try again.")
-      return
-    }
-    const newId = (created as { id: string }).id
-
-    // 2. Carry the revision comment over to the new task.
-    await supabase.from('comments').insert({ task_id: newId, author_id: profile.id, body: comment })
-
-    // 3. Mark the original done.
     const { error: updErr } = await supabase
       .from('tasks')
-      .update({ status: 'done', completed_at: new Date().toISOString() })
+      .update({ approval_state: 'revision_requested', revision_note: comment })
       .eq('id', reviseTarget.id)
-
+    if (!updErr) {
+      await supabase
+        .from('comments')
+        .insert({ task_id: reviseTarget.id, author_id: profile.id, body: comment })
+    }
     setBusy(false)
     setReviseTarget(null)
     if (updErr) {
-      setError("Revision task created, but couldn't close the original. Try again.")
+      setError("Couldn't request revision. Try again.")
       return
     }
     onDone?.()

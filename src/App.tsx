@@ -8,7 +8,6 @@ import { DetailTugas } from '@/pages/DetailTugas'
 import { DetailProyek } from '@/pages/DetailProyek'
 import { ProyekList } from '@/pages/ProyekList'
 import { TambahTugas } from '@/pages/TambahTugas'
-import { PerluTindakan } from '@/pages/PerluTindakan'
 import { Dashboard } from '@/pages/Dashboard'
 
 // Decides what to render once auth has resolved. Employees and employers share the
@@ -18,8 +17,8 @@ function Gate() {
 
   if (loading) {
     return (
-      <div className="flex min-h-full items-center justify-center bg-white">
-        <span className="text-sm text-slate-400">Loading…</span>
+      <div className="flex min-h-full items-center justify-center bg-cloud">
+        <span className="text-sm text-slate-500">Loading…</span>
       </div>
     )
   }
@@ -35,7 +34,6 @@ function Gate() {
           <Route path="proyek" element={<ProyekList />} />
           <Route path="proyek/:id" element={<DetailProyek />} />
           <Route path="tambah" element={<TambahTugas />} />
-          <Route path="perlu-tindakan" element={<PerluTindakan />} />
           <Route path="dashboard" element={<Dashboard />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

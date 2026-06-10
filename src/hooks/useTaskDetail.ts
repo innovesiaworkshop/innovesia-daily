@@ -37,8 +37,9 @@ export function useTaskDetail(taskId: string | undefined): TaskDetailHook {
       .from('tasks')
       .select(
         'id, name, project_id, pic_id, start_date, due_date, status, needs_approval, ' +
+          'approval_state, description, revision_note, planned_for, completed_at, ' +
           // tasks→profiles is ambiguous (pic_id + the task_tags join), so name the FK.
-        'approval_state, project:projects(name), pic:profiles!tasks_pic_id_fkey(name)',
+          'project:projects(name), pic:profiles!tasks_pic_id_fkey(name)',
       )
       .eq('id', taskId)
       .single()
