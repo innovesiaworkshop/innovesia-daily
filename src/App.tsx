@@ -1,17 +1,39 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { AuthProvider } from '@/lib/AuthContext'
+import { useAuth } from '@/hooks/useAuth'
 import { Layout } from '@/components/Layout'
+import { Login } from '@/pages/Login'
 import { TugasSaya } from '@/pages/TugasSaya'
+import { DetailTugas } from '@/pages/DetailTugas'
+import { DetailProyek } from '@/pages/DetailProyek'
+import { ProyekList } from '@/pages/ProyekList'
 import { TambahTugas } from '@/pages/TambahTugas'
 import { PerluTindakan } from '@/pages/PerluTindakan'
 import { Dashboard } from '@/pages/Dashboard'
 
-// Routing shell only — auth gating and feature screens come later.
-export default function App() {
+// Decides what to render once auth has resolved. Employees and employers share the
+// same home for now.
+function Gate() {
+  const { session, loading } = useAuth()
+
+  if (loading) {
+    return (
+      <div className="flex min-h-full items-center justify-center bg-white">
+        <span className="text-sm text-slate-400">Loading…</span>
+      </div>
+    )
+  }
+
+  if (!session) return <Login />
+
   return (
     <BrowserRouter>
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<TugasSaya />} />
+          <Route path="tugas/:id" element={<DetailTugas />} />
+          <Route path="proyek" element={<ProyekList />} />
+          <Route path="proyek/:id" element={<DetailProyek />} />
           <Route path="tambah" element={<TambahTugas />} />
           <Route path="perlu-tindakan" element={<PerluTindakan />} />
           <Route path="dashboard" element={<Dashboard />} />
@@ -19,5 +41,13 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
+  )
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <Gate />
+    </AuthProvider>
   )
 }

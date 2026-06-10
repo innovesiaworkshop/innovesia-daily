@@ -13,8 +13,8 @@ export default defineConfig({
       manifest: {
         name: 'Innovesia Daily',
         short_name: 'Daily',
-        description: 'Log tugas harian tim Innovesia.',
-        lang: 'id',
+        description: 'Daily task log for the Innovesia team.',
+        lang: 'en',
         start_url: '/',
         scope: '/',
         display: 'standalone',
