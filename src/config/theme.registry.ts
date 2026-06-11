@@ -7,9 +7,13 @@
 import type { ClientTheme } from "./theme.types";
 import { innovesiaTheme } from "./clients/innovesia";
 // import { acmeTheme } from "./clients/acme"; // ← uncomment when adding Acme
+import { yayasanmbgTheme } from "./clients/yayasanmbg";
+
+
 
 const registry: Record<string, ClientTheme> = {
   innovesia: innovesiaTheme,
+  yayasanmbg: yayasanmbgTheme,  // ← add this
   // acme: acmeTheme, // ← uncomment when adding Acme
 };
 
