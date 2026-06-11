@@ -8,13 +8,13 @@ export const yayasanmbgTheme: ClientTheme = {
   appTagline: "Track. Deliver. Grow.",
 
   colors: {
-    primary:    "#1a3fa3",
-    accent:     "#4a9fd4",
-    highlight:  "#d42b2b",
-    background: "#f0f4fb",
-    surface:    "#ffffff",
-    text:       "#111827",
-    textMuted:  "#6b7280",
+    primary:    "#5c4033",
+    accent:     "#8b6914",
+    highlight:  "#c17f3a",
+    background: "#f5ede0",
+    surface:    "#fffaf4",
+    text:       "#2c1a0e",
+    textMuted:  "#7a6352",
   },
 
   assets: {
@@ -23,6 +23,8 @@ export const yayasanmbgTheme: ClientTheme = {
     favicon:    "/clients/yayasanmbg/favicon.svg",
     pwaIcon192: "/clients/yayasanmbg/icons/icon-192.png",
     pwaIcon512: "/clients/yayasanmbg/icons/icon-512.png",
+    loginBackground: "/clients/yayasanmbg/login-background.jpeg",
+    appBackground: "/clients/yayasanmbg/app-background.jpeg",
   },
 
   pwa: {
