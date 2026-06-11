@@ -6,6 +6,7 @@ import { RoleSwitcher } from './RoleSwitcher'
 import { useAuth } from '@/hooks/useAuth'
 import { useKeyboardOpen } from '@/hooks/useKeyboardOpen'
 import { theme } from '@/config/theme.registry'
+import { headerBranding } from '@/config/branding'
 
 // Pages on dynamic routes (e.g. /proyek/:id, /tugas/:id) push their header title — and
 // optionally a back affordance — up into the shared header via Outlet context.
@@ -59,10 +60,21 @@ export function Layout() {
         {/* Wordmark, centered; Log out pinned right. */}
         <div className="relative flex items-center justify-center">
           <div className="flex items-baseline gap-1.5">
-            <span className="text-lg font-extrabold tracking-tight text-navy">
-              {theme.companyName}
-            </span>
-            <span className="text-lg font-light italic text-navy/70">daily</span>
+            {(() => {
+              const title = headerBranding(theme)
+              return title.kind === 'wordmark' ? (
+                <>
+                  <span className="text-lg font-extrabold tracking-tight text-navy">
+                    {title.lead}
+                  </span>
+                  <span className="text-lg font-light italic text-navy/70">{title.accent}</span>
+                </>
+              ) : (
+                <span className="text-lg font-extrabold tracking-tight text-navy">
+                  {title.text}
+                </span>
+              )
+            })()}
           </div>
           <button
             type="button"

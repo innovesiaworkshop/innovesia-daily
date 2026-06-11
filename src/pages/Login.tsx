@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { theme } from '@/config/theme.registry'
+import { loginBranding } from '@/config/branding'
 
 // Google icon (multicolor "G"), kept inline to avoid an asset/dependency.
 function GoogleIcon({ className }: { className?: string }) {
@@ -54,9 +55,19 @@ export function Login() {
 
       <div className="relative z-10 flex flex-1 flex-col px-7 pt-[calc(env(safe-area-inset-top)+4rem)]">
         <h1 className="text-5xl font-extrabold leading-[1.04] tracking-tight text-navy">
-          {theme.companyName}
-          <br />
-          <span className="font-light italic">Daily</span>
+          {(() => {
+            const title = loginBranding(theme)
+            return title.kind === 'wordmark' ? (
+              <>
+                {title.lead}
+                <br />
+                {/* Accent stored lowercase canonically; capitalize it in the hero. */}
+                <span className="font-light italic capitalize">{title.accent}</span>
+              </>
+            ) : (
+              title.text
+            )
+          })()}
         </h1>
         <p className="mt-3 text-sm font-medium text-slate-600">
           Log your daily agenda in seconds.

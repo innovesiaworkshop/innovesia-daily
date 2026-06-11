@@ -17,6 +17,13 @@ export const acmeTheme: ClientTheme = {
   appName: "Acme Daily",
   appTagline: "Track. Deliver. Grow.",
 
+  // Optional brand title. Pick ONE style:
+  //   • Two-tone wordmark (bold lead + italic accent), used on both login + header:
+  //       branding: { wordmark: { lead: "Acme", accent: "daily" } },
+  //   • Or explicit per-surface titles (full on login, compact in the header):
+  //       branding: { loginTitle: "Acme Task Management", headerTitle: "Acme" },
+  //   • Or omit entirely → login uses appName, header uses companyShortName.
+
   colors: {
     primary: "#0d47a1",    // ← replace with client's primary brand color
     accent: "#1976d2",     // ← replace with client's accent color
