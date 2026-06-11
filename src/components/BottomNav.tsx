@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
+import { useKeyboardOpen } from '@/hooks/useKeyboardOpen'
 
 // Inline icons keep the shell dependency-free. Stroke uses currentColor so the
 // active/inactive color is driven by Tailwind text classes below.
@@ -55,7 +56,11 @@ const items: NavItem[] = [
 
 export function BottomNav() {
   const { effectiveRole } = useAuth()
+  const keyboardOpen = useKeyboardOpen()
   const visible = items.filter((item) => !item.employerOnly || effectiveRole === 'employer')
+
+  // Hide while the keyboard is up so it doesn't pile onto the focused input.
+  if (keyboardOpen) return null
 
   return (
     <nav className="absolute bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] left-1/2 z-20 -translate-x-1/2 rounded-full border border-white/50 bg-white/70 px-1.5 py-1.5 shadow-glass backdrop-blur-md">

@@ -18,6 +18,18 @@ export interface ClientTheme {
   /** App subtitle / tagline (optional) */
   appTagline?: string;
 
+  /** Optional per-client brand title. If omitted, the login hero falls back to `appName`
+      and the in-app header to `companyShortName`/`appName` in a clean single style. */
+  branding?: {
+    /** Two-tone wordmark: bold lead + italic accent (e.g. "Innovesia" + "daily"). When set,
+        it's used for both the login hero and the header unless a specific title overrides it. */
+    wordmark?: { lead: string; accent: string };
+    /** Full title for the login hero. Falls back to `wordmark`, then `appName`. */
+    loginTitle?: string;
+    /** Compact title for the in-app header. Falls back to `wordmark`, then `companyShortName`. */
+    headerTitle?: string;
+  };
+
   /** Brand colors */
   colors: {
     primary: string;   // main buttons, headers, active states

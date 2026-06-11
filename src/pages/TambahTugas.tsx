@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
+import { useKeyboardOpen } from '@/hooks/useKeyboardOpen'
 import { Calendar, FileText, Folder, PencilLine, Sunrise } from 'lucide-react'
 import { ProjectPicker } from '@/components/ProjectPicker'
 import { BatchAddAgenda } from '@/components/BatchAddAgenda'
@@ -30,6 +31,7 @@ export function TambahTugas() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [batch, setBatch] = useState(false)
+  const keyboardOpen = useKeyboardOpen()
 
   async function handleSave() {
     if (saving) return
@@ -139,13 +141,17 @@ export function TambahTugas() {
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      <button
-        type="button"
-        onClick={() => void handleSave()}
-        className="absolute bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] left-1/2 z-20 w-[calc(100%-2rem)] max-w-[26rem] -translate-x-1/2 rounded-full bg-navy py-3.5 text-base font-semibold text-white shadow-pill transition active:scale-[0.99]"
-      >
-        {saving ? 'Saving…' : 'Save'}
-      </button>
+      {/* Pinned above the bottom nav; hidden while the keyboard is up so it doesn't
+          overlap the focused field. */}
+      {!keyboardOpen && (
+        <button
+          type="button"
+          onClick={() => void handleSave()}
+          className="absolute bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] left-1/2 z-20 w-[calc(100%-2rem)] max-w-[26rem] -translate-x-1/2 rounded-full bg-navy py-3.5 text-base font-semibold text-white shadow-pill transition active:scale-[0.99]"
+        >
+          {saving ? 'Saving…' : 'Save'}
+        </button>
+      )}
         </>
       )}
     </div>

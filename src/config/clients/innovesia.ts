@@ -11,6 +11,11 @@ export const innovesiaTheme: ClientTheme = {
   appName: "Innovesia Daily",
   appTagline: "Catat. Lacak. Selesaikan.",
 
+  // Two-tone wordmark: "Innovesia" + italic "daily" (the login hero capitalizes the accent).
+  branding: {
+    wordmark: { lead: "Innovesia", accent: "daily" },
+  },
+
   colors: {
     primary: "#1f52a5",    // navy
     accent: "#14b4e8",     // sky

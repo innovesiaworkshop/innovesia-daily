@@ -7,6 +7,12 @@ export const yayasanmbgTheme: ClientTheme = {
   appName: "MBG Task Management",
   appTagline: "Track. Deliver. Grow.",
 
+  // Full title on the login hero; the compact header uses the short company name.
+  branding: {
+    loginTitle: "Task Management Yayasan MBG",
+    headerTitle: "Yayasan MBG",
+  },
+
   colors: {
     primary:    "#5c4033",
     accent:     "#8b6914",

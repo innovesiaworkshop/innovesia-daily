@@ -33,10 +33,13 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     // Update the browser tab title
     document.title = theme.appName;
 
-    // Update PWA theme-color meta tag
+    // Drive the live status-bar / browser-chrome color from the light `surface` token so the
+    // iOS standalone status bar matches the frosted (light) header instead of showing a band
+    // in the brand primary. The manifest still uses the brand color (theme.pwa.themeColor) for
+    // the launcher / splash.
     const metaThemeColor = document.querySelector('meta[name="theme-color"]');
     if (metaThemeColor) {
-      metaThemeColor.setAttribute("content", theme.pwa.themeColor);
+      metaThemeColor.setAttribute("content", theme.colors.surface);
     }
 
     // Update favicon dynamically
