@@ -27,6 +27,8 @@ export const innovesiaTheme: ClientTheme = {
     favicon: "/favicon.svg",
     pwaIcon192: "/icons/icon-192.png",
     pwaIcon512: "/icons/icon-512.png",
+    loginBackground: "/login-background.png",
+    appBackground: "/app-background.png",
   },
 
   pwa: {

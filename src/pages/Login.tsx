@@ -38,7 +38,7 @@ export function Login() {
     <div className="relative mx-auto flex h-full max-w-md flex-col overflow-hidden bg-cloud">
       {/* Full-bleed background photo. */}
       <img
-        src="/login-background.png"
+        src={theme.assets.loginBackground}
         alt=""
         aria-hidden
         className="absolute inset-0 h-full w-full object-cover"

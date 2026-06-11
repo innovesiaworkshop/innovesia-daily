@@ -36,6 +36,8 @@ export interface ClientTheme {
     favicon: string;       // e.g. "/favicon.ico"
     pwaIcon192: string;    // e.g. "/icons/icon-192.png"
     pwaIcon512: string;    // e.g. "/icons/icon-512.png"
+    loginBackground: string; // full-bleed login photo, e.g. "/login-background.png"
+    appBackground: string;   // app canvas behind the glass, e.g. "/app-background.png"
   };
 
   /** PWA manifest fields */

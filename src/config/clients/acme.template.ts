@@ -33,6 +33,8 @@ export const acmeTheme: ClientTheme = {
     favicon: "/clients/acme/favicon.ico",
     pwaIcon192: "/clients/acme/icons/icon-192.png",
     pwaIcon512: "/clients/acme/icons/icon-512.png",
+    loginBackground: "/clients/acme/login-background.png",
+    appBackground: "/clients/acme/app-background.png",
   },
 
   pwa: {

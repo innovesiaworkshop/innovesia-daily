@@ -47,7 +47,8 @@ export function Layout() {
       {/* Fixed app background behind all glass; the frosted blur samples it. */}
       <div
         aria-hidden
-        className="fixed inset-0 -z-10 bg-[url('/app-background.png')] bg-cover bg-center"
+        className="fixed inset-0 -z-10 bg-cover bg-center"
+        style={{ backgroundImage: `url('${theme.assets.appBackground}')` }}
       />
       <div aria-hidden className="fixed inset-0 -z-10 bg-white" style={{ opacity: APP_OVERLAY }} />
 
