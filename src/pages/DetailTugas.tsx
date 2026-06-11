@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useOutletContext, useParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { useTaskDetail } from '@/hooks/useTaskDetail'
@@ -11,15 +11,25 @@ import { TagRekan } from '@/components/TagRekan'
 import { CommentThread } from '@/components/CommentThread'
 import { ApprovalDialogs } from '@/components/ApprovalDialogs'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
-import { Badge, PillButton } from '@/components/ui'
+import { Badge, Card, PillButton, SectionHeading } from '@/components/ui'
+import { Calendar, CircleDot, FileText, MessageSquare, Paperclip, UserPlus } from 'lucide-react'
+import type { LayoutOutletContext } from '@/components/Layout'
 
-// A labelled block; keeps the screen's sections visually consistent.
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+// A section as its own glass card with an icon'd heading, so each block reads distinctly.
+function Field({
+  icon,
+  label,
+  children,
+}: {
+  icon: React.ReactNode
+  label: string
+  children: React.ReactNode
+}) {
   return (
-    <section>
-      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</h3>
+    <Card className="p-4">
+      <SectionHeading label={label} icon={icon} />
       {children}
-    </section>
+    </Card>
   )
 }
 
@@ -48,6 +58,13 @@ export function DetailTugas() {
   useEffect(() => {
     setDescription(task?.description ?? '')
   }, [task?.id, task?.description])
+
+  // Surface the agenda name + a back affordance in the shared app header (cleared on leave).
+  const { setHeader } = useOutletContext<LayoutOutletContext>()
+  useEffect(() => {
+    setHeader({ title: task?.name ?? null, onBack: () => navigate(-1) })
+    return () => setHeader({ title: null, onBack: null })
+  }, [task?.name, setHeader, navigate])
 
   const isPic = !!profile && !!task && profile.id === task.pic_id
   const isEmployer = effectiveRole === 'employer'
@@ -126,17 +143,13 @@ export function DetailTugas() {
   const approvalBadge = APPROVAL_LABEL[task.approval_state]
 
   return (
-    <div className="space-y-6 pb-4">
-      {/* Header */}
+    <div className="space-y-4 pb-28">
+      {/* Body header: project link + PIC + badges (the name lives in the app header). */}
       <header>
-        <button type="button" onClick={() => navigate(-1)} className="mb-3 text-sm font-medium text-sky">
-          ← Back
-        </button>
-        <h2 className="text-xl font-semibold leading-snug text-slate-900">{task.name}</h2>
         <button
           type="button"
           onClick={() => navigate(`/proyek/${task.project_id}`)}
-          className="mt-1 text-sm font-medium text-sky active:opacity-70"
+          className="text-sm font-medium text-sky active:opacity-70"
         >
           {task.project?.name ?? 'No project'} ›
         </button>
@@ -180,7 +193,7 @@ export function DetailTugas() {
       )}
 
       {/* Status — editable control or read-only label. */}
-      <Field label="Status">
+      <Field label="Status" icon={<CircleDot className="h-4 w-4" />}>
         {locked ? (
           <p className="text-sm text-slate-700">{approvalBadge}</p>
         ) : (
@@ -199,7 +212,7 @@ export function DetailTugas() {
       </Field>
 
       {/* Due date */}
-      <Field label="Due">
+      <Field label="Due" icon={<Calendar className="h-4 w-4" />}>
         {canEdit ? (
           <input
             type="date"
@@ -214,7 +227,7 @@ export function DetailTugas() {
       </Field>
 
       {/* Description */}
-      <Field label="Description">
+      <Field label="Description" icon={<FileText className="h-4 w-4" />}>
         {canEdit ? (
           <textarea
             value={description}
@@ -236,12 +249,12 @@ export function DetailTugas() {
       </Field>
 
       {/* Files (PDF) */}
-      <Field label="Files">
+      <Field label="Files" icon={<Paperclip className="h-4 w-4" />}>
         <TaskFiles taskId={task.id} files={files} canUpload={canEdit} reloadFiles={reloadFiles} />
       </Field>
 
       {/* Notify teammate (CC) */}
-      <Field label="Notify teammate (CC)">
+      <Field label="Notify teammate (CC)" icon={<UserPlus className="h-4 w-4" />}>
         {canEdit ? (
           <TagRekan taskId={task.id} picId={task.pic_id} tags={tags} reloadTags={reloadTags} />
         ) : (
@@ -263,7 +276,7 @@ export function DetailTugas() {
       </Field>
 
       {/* Comments */}
-      <Field label="Comments">
+      <Field label="Comments" icon={<MessageSquare className="h-4 w-4" />}>
         <CommentThread
           taskId={task.id}
           authorId={profile?.id ?? ''}
@@ -273,11 +286,19 @@ export function DetailTugas() {
         />
       </Field>
 
-      {/* Editable: completion / approval actions (PIC only). */}
+      {/* Editable: completion / approval actions (PIC only). The buttons are pinned above the
+          bottom nav — like the New-Agenda Save — while the hint/error stay inline. */}
       {canEdit && (
-        <section className="space-y-2 border-t border-slate-100 pt-4">
-          {actionError && <p className="text-sm text-red-600">{actionError}</p>}
-          <div className="flex gap-2">
+        <>
+          {(actionError || (!isEmployer && files.length === 0)) && (
+            <section className="space-y-1 border-t border-slate-100 pt-4">
+              {actionError && <p className="text-sm text-red-600">{actionError}</p>}
+              {!isEmployer && files.length === 0 && (
+                <p className="text-xs text-slate-400">Attach a PDF to enable approval.</p>
+              )}
+            </section>
+          )}
+          <div className="absolute bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] left-1/2 z-20 flex w-[calc(100%-2rem)] max-w-[26rem] -translate-x-1/2 gap-2">
             {!isEmployer && (
               <PillButton
                 variant="secondary"
@@ -292,10 +313,7 @@ export function DetailTugas() {
               Mark as Complete
             </PillButton>
           </div>
-          {!isEmployer && files.length === 0 && (
-            <p className="text-xs text-slate-400">Attach a PDF to enable approval.</p>
-          )}
-        </section>
+        </>
       )}
 
       {confirmAction && (

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
+import { theme } from '@/config/theme.registry'
 
 // Google icon (multicolor "G"), kept inline to avoid an asset/dependency.
 function GoogleIcon({ className }: { className?: string }) {
@@ -12,6 +13,9 @@ function GoogleIcon({ className }: { className?: string }) {
     </svg>
   )
 }
+
+// Brand wash over the login photo (tune 0.15–0.25).
+const TINT_OPACITY = 0.2
 
 export function Login() {
   const { signInWithGoogle } = useAuth()
@@ -39,12 +43,18 @@ export function Login() {
         aria-hidden
         className="absolute inset-0 h-full w-full object-cover"
       />
+      {/* Brand wash to shift the photo's colour a touch. */}
+      <div
+        aria-hidden
+        className="absolute inset-0 bg-gradient-to-br from-navy to-sky"
+        style={{ opacity: TINT_OPACITY }}
+      />
       {/* Light scrim from the top so the dark logo / navy wordmark / button stay legible. */}
       <div className="absolute inset-0 bg-gradient-to-b from-white/90 via-white/55 to-white/10" />
 
       <div className="relative z-10 flex flex-1 flex-col px-7 pt-[calc(env(safe-area-inset-top)+4rem)]">
         <h1 className="text-5xl font-extrabold leading-[1.04] tracking-tight text-navy">
-          Innovesia
+          {theme.companyName}
           <br />
           <span className="font-light italic">Daily</span>
         </h1>
@@ -52,8 +62,8 @@ export function Login() {
           Log your daily agenda in seconds.
         </p>
 
-        {/* Sign-in pinned toward the bottom. */}
-        <div className="mt-auto pb-[calc(env(safe-area-inset-bottom)+2.5rem)]">
+        {/* Sign-in grouped directly under the subtitle, as part of the top block. */}
+        <div className="mt-8">
           <button
             type="button"
             onClick={handleSignIn}

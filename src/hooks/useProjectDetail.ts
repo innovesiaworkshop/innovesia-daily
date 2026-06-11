@@ -9,10 +9,14 @@ interface ProjectDetailState {
   error: string | null
 }
 
+interface ProjectDetailHook extends ProjectDetailState {
+  reloadProject: () => Promise<void>
+}
+
 // Loads a project with ALL members' tasks (RLS allows reading everyone's), each task
 // carrying its files for the inline-openable timeline. Tasks stay live via Supabase
 // realtime so the auto-derived timeline updates as work progresses.
-export function useProjectDetail(projectId: string | undefined): ProjectDetailState {
+export function useProjectDetail(projectId: string | undefined): ProjectDetailHook {
   const [state, setState] = useState<ProjectDetailState>({
     project: null,
     tasks: [],
@@ -24,7 +28,7 @@ export function useProjectDetail(projectId: string | undefined): ProjectDetailSt
     if (!projectId) return
     const { data, error } = await supabase
       .from('projects')
-      .select('id, name')
+      .select('id, name, created_by, archived')
       .eq('id', projectId)
       .single()
     if (error) {
@@ -40,7 +44,7 @@ export function useProjectDetail(projectId: string | undefined): ProjectDetailSt
     const { data } = await supabase
       .from('tasks')
       .select(
-        'id, name, status, created_at, completed_at, ' +
+        'id, name, status, created_at, completed_at, pic_id, ' +
           'pic:profiles!tasks_pic_id_fkey(name), files:task_files(id, file_path, file_name)',
       )
       .eq('project_id', projectId)
@@ -72,5 +76,5 @@ export function useProjectDetail(projectId: string | undefined): ProjectDetailSt
     }
   }, [projectId, reloadProject, reloadTasks])
 
-  return state
+  return { ...state, reloadProject }
 }

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
+import { Calendar, CheckCircle2, ChevronDown, Clock, ListTodo, Sparkles } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { useMyTasks } from '@/hooks/useMyTasks'
@@ -38,6 +39,9 @@ export function TugasSaya() {
   )
 
   const [approvalOpen, setApprovalOpen] = useState(true)
+  // Today's / All Agenda peek-collapse: default collapsed, showing only the topmost item.
+  const [todayOpen, setTodayOpen] = useState(false)
+  const [allOpen, setAllOpen] = useState(false)
   const [showAllDone, setShowAllDone] = useState(false)
   // A pending confirm: either completing an agenda or deleting it.
   const [pending, setPending] = useState<{ task: TaskWithProject; kind: 'complete' | 'delete' } | null>(
@@ -49,28 +53,34 @@ export function TugasSaya() {
 
   const today = todayISO()
 
-  // Scroll-spy: highlight the rail icon for whichever section sits near the top.
+  // Scroll-spy: highlight the rail icon for the section heading you've most recently
+  // scrolled past. We measure against a line just below the header in the real scroll
+  // container (`<main>`), so the active icon matches what's at the top of the content
+  // area — not the section that's already scrolled away.
   useEffect(() => {
     if (loading || error) return
+    const root = document.querySelector('main')
+    if (!root) return
     const sections: HomeSection[] = ['approval', 'today', 'all', 'completed']
-    const els = sections
-      .map((s) => document.getElementById(`home-${s}`))
-      .filter((el): el is HTMLElement => el != null)
-    if (els.length === 0) return
+    const OFFSET = 96 // px below main's top edge where a section becomes "active"
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries.filter((e) => e.isIntersecting)
-        if (visible.length === 0) return
-        const topmost = visible.reduce((a, b) =>
-          a.boundingClientRect.top < b.boundingClientRect.top ? a : b,
-        )
-        setActiveSection(topmost.target.id.replace('home-', '') as HomeSection)
-      },
-      { rootMargin: '-15% 0px -75% 0px', threshold: 0 },
-    )
-    els.forEach((el) => observer.observe(el))
-    return () => observer.disconnect()
+    function update() {
+      const line = root!.getBoundingClientRect().top + OFFSET
+      let current: HomeSection = sections[0]
+      for (const s of sections) {
+        const el = document.getElementById(`home-${s}`)
+        if (el && el.getBoundingClientRect().top <= line) current = s
+      }
+      setActiveSection(current)
+    }
+
+    update()
+    root.addEventListener('scroll', update, { passive: true })
+    window.addEventListener('resize', update)
+    return () => {
+      root.removeEventListener('scroll', update)
+      window.removeEventListener('resize', update)
+    }
   }, [loading, error])
 
   // Split the user's agenda into the four home sections (status values are unchanged;
@@ -139,21 +149,15 @@ export function TugasSaya() {
         }}
       />
 
-      <div className="pb-4">
-        {/* Quick add — pinned just below the floating header while content scrolls. */}
-        <Link
-          to="/tambah"
-          className="sticky top-2 z-10 flex w-full items-center justify-center gap-2 rounded-full bg-navy py-3.5 text-base font-semibold text-white shadow-pill transition active:scale-[0.99]"
-        >
-          + Agenda
-        </Link>
-
-        {/* Scrollable content; right padding keeps cards clear of the shortcut rail. */}
-        <div className="mt-6 space-y-6 pr-14">
-          {/* Employer-only: team approvals to kickstart the day. */}
+      <div className="space-y-6 pb-4">
+        {/* Employer-only: team approvals to kickstart the day. */}
         {isEmployer && (
           <section>
-            <SectionHeading label="Kickstart Your Day" count={managerStack.items.length} />
+            <SectionHeading
+              label="Kickstart Your Day"
+              count={managerStack.items.length}
+              icon={<Sparkles className="h-4 w-4" />}
+            />
             <ApprovalStack
               items={managerStack.items}
               actions={approvalActions}
@@ -174,12 +178,13 @@ export function TugasSaya() {
         {!loading && !error && (
           <>
             {/* Waiting for Approval — always shown, collapsible. */}
-            <section id="home-approval" className="scroll-mt-20">
+            <section id="home-approval" className="scroll-mt-4">
               <button
                 type="button"
                 onClick={() => setApprovalOpen((o) => !o)}
                 className="mb-3 flex w-full items-center gap-2"
               >
+                <Clock className="h-4 w-4 text-navy" />
                 <span className="text-[17px] font-bold tracking-tight text-slate-900">
                   Waiting for Approval
                 </span>
@@ -204,12 +209,31 @@ export function TugasSaya() {
                 ))}
             </section>
 
-            {/* Today's Agenda. */}
-            <section id="home-today" className="scroll-mt-20">
-              <SectionHeading label="Today's Agenda" count={todayTasks.length} />
+            {/* Today's Agenda — peek-collapsible. */}
+            <section id="home-today" className="scroll-mt-4">
+              <SectionHeading
+                label="Today's Agenda"
+                count={todayTasks.length}
+                icon={<Calendar className="h-4 w-4" />}
+                action={
+                  todayTasks.length > 1 ? (
+                    <button
+                      type="button"
+                      onClick={() => setTodayOpen((o) => !o)}
+                      aria-expanded={todayOpen}
+                      aria-label={todayOpen ? 'Collapse' : 'Expand'}
+                      className="text-slate-400"
+                    >
+                      <ChevronDown
+                        className={`h-5 w-5 transition-transform ${todayOpen ? 'rotate-180' : ''}`}
+                      />
+                    </button>
+                  ) : undefined
+                }
+              />
               {todayTasks.length > 0 ? (
                 <div className="space-y-3">
-                  {todayTasks.map((t) => (
+                  {(todayOpen ? todayTasks : todayTasks.slice(0, 1)).map((t) => (
                     <TaskCard
                       key={t.id}
                       task={t}
@@ -225,14 +249,42 @@ export function TugasSaya() {
               ) : (
                 <p className="text-sm text-slate-400">Nothing here yet.</p>
               )}
+              {todayTasks.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => setTodayOpen((o) => !o)}
+                  className="mt-2 text-sm font-medium text-sky"
+                >
+                  {todayOpen ? 'Show less' : `Show all (${todayTasks.length})`}
+                </button>
+              )}
             </section>
 
-            {/* All Agenda (backlog). */}
-            <section id="home-all" className="scroll-mt-20">
-              <SectionHeading label="All Agenda" count={backlog.length} />
+            {/* All Agenda (backlog) — peek-collapsible. */}
+            <section id="home-all" className="scroll-mt-4">
+              <SectionHeading
+                label="All Agenda"
+                count={backlog.length}
+                icon={<ListTodo className="h-4 w-4" />}
+                action={
+                  backlog.length > 1 ? (
+                    <button
+                      type="button"
+                      onClick={() => setAllOpen((o) => !o)}
+                      aria-expanded={allOpen}
+                      aria-label={allOpen ? 'Collapse' : 'Expand'}
+                      className="text-slate-400"
+                    >
+                      <ChevronDown
+                        className={`h-5 w-5 transition-transform ${allOpen ? 'rotate-180' : ''}`}
+                      />
+                    </button>
+                  ) : undefined
+                }
+              />
               {backlog.length > 0 ? (
                 <div className="space-y-3">
-                  {backlog.map((t) => (
+                  {(allOpen ? backlog : backlog.slice(0, 1)).map((t) => (
                     <TaskCard
                       key={t.id}
                       task={t}
@@ -248,11 +300,24 @@ export function TugasSaya() {
               ) : (
                 <p className="text-sm text-slate-400">Nothing here yet.</p>
               )}
+              {backlog.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => setAllOpen((o) => !o)}
+                  className="mt-2 text-sm font-medium text-sky"
+                >
+                  {allOpen ? 'Show less' : `Show all (${backlog.length})`}
+                </button>
+              )}
             </section>
 
             {/* Completed + full history. */}
-            <section id="home-completed" className="scroll-mt-20">
-              <SectionHeading label="Completed" count={doneToday.length} />
+            <section id="home-completed" className="scroll-mt-4">
+              <SectionHeading
+                label="Completed"
+                count={doneToday.length}
+                icon={<CheckCircle2 className="h-4 w-4" />}
+              />
               {doneToday.length > 0 ? (
                 <div className="space-y-3">
                   {doneToday.map((t) => (
@@ -285,8 +350,7 @@ export function TugasSaya() {
           </>
         )}
 
-          {actionError && <p className="text-center text-sm text-red-600">{actionError}</p>}
-        </div>
+        {actionError && <p className="text-center text-sm text-red-600">{actionError}</p>}
       </div>
 
       {pending && (

@@ -27,7 +27,7 @@ export function ApprovalStack({
   actions: ReturnType<typeof useApprovalActions>
   authorId: string
 }) {
-  const [emblaRef, emblaApi] = useEmblaCarousel({ align: 'start' })
+  const [emblaRef, emblaApi] = useEmblaCarousel({ align: 'start', loop: true })
   const [fileError, setFileError] = useState<string | null>(null)
   const [nudged, setNudged] = useState<Set<string>>(new Set())
   const [selectedIndex, setSelectedIndex] = useState(0)

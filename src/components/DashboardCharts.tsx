@@ -12,14 +12,15 @@ import {
   YAxis,
 } from 'recharts'
 import { Card } from '@/components/ui'
+import { theme } from '@/config/theme.registry'
 import { localDateISO } from '@/lib/dates'
 import type { DailyCompletion } from '@/lib/types'
 import type { StatusCounts } from '@/hooks/useDailyCompletions'
 
-// Brand palette (keep in sync with tailwind / the status→colour rule).
-const NAVY = '#1f52a5'
-const SKY = '#14b4e8'
-const GOLD = '#ffce0f'
+// Brand palette from the active client theme (recharts needs colour values, not classes).
+const NAVY = theme.colors.primary
+const SKY = theme.colors.accent
+const GOLD = theme.colors.highlight
 const SLATE = '#64748b'
 
 const dayLong = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })

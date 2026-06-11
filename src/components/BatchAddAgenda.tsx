@@ -75,7 +75,7 @@ export function BatchAddAgenda() {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="flex flex-1 flex-col gap-3">
       {rows.map((r) => {
         const needsProject = r.name.trim().length > 0 && !r.project
         return (
@@ -161,7 +161,13 @@ export function BatchAddAgenda() {
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      <PillButton variant="primary" fullWidth disabled={named.length === 0 || saving} onClick={() => void saveAll()}>
+      <PillButton
+        variant="primary"
+        fullWidth
+        disabled={named.length === 0 || saving}
+        onClick={() => void saveAll()}
+        className="sticky bottom-[calc(env(safe-area-inset-bottom)+5rem)] z-10 mt-auto"
+      >
         {saving ? 'Saving…' : `Save all${named.length > 0 ? ` (${named.length})` : ''}`}
       </PillButton>
     </div>

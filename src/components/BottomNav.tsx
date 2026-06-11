@@ -58,10 +58,10 @@ export function BottomNav() {
   const visible = items.filter((item) => !item.employerOnly || effectiveRole === 'employer')
 
   return (
-    <nav className="absolute inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-20 rounded-full border border-white/50 bg-white/70 px-1.5 py-1.5 shadow-glass backdrop-blur-md">
-      <ul className="flex items-stretch justify-around">
+    <nav className="absolute bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] left-1/2 z-20 -translate-x-1/2 rounded-full border border-white/50 bg-white/70 px-1.5 py-1.5 shadow-glass backdrop-blur-md">
+      <ul className="flex items-center gap-1">
         {visible.map(({ to, label, Icon }) => (
-          <li key={to} className="flex-1">
+          <li key={to}>
             <NavLink
               to={to}
               end={to === '/'}

@@ -22,7 +22,7 @@ export function ShortcutRail({
   return (
     <nav
       aria-label="Jump to section"
-      className="fixed right-2 top-1/2 z-30 flex -translate-y-1/2 flex-col gap-1.5 rounded-full border border-white/50 bg-white/60 p-1.5 shadow-glass backdrop-blur-md"
+      className="fixed right-2 top-[58%] z-30 flex -translate-y-1/2 flex-col gap-1.5 rounded-full border border-white/50 bg-white/60 p-1.5 shadow-glass backdrop-blur-md"
     >
       {ITEMS.map(({ section, label, Icon }) => {
         const isActive = active === section

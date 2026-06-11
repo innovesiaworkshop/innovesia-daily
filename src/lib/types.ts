@@ -11,6 +11,10 @@ export interface Profile {
 export interface Project {
   id: string
   name: string
+  // Present when the row is loaded for the project detail / list (optional so the
+  // many id-name-only selects can still cast to Project).
+  created_by?: string
+  archived?: boolean
 }
 
 export type TaskStatus = 'awaiting_approval' | 'on_progress' | 'done'
@@ -108,6 +112,8 @@ export interface ProjectTask {
   status: TaskStatus
   created_at: string
   completed_at: string | null
+  // pic_id powers the inline comment permission (PIC can comment) on the timeline.
+  pic_id: string
   pic: { name: string } | null
   files: { id: string; file_path: string; file_name: string }[]
 }

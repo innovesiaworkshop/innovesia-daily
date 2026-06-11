@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from '@/lib/AuthContext'
 import { useAuth } from '@/hooks/useAuth'
+import { useViewportPin } from '@/hooks/useViewportPin'
 import { Layout } from '@/components/Layout'
 import { Login } from '@/pages/Login'
 import { TugasSaya } from '@/pages/TugasSaya'
@@ -44,6 +45,8 @@ function Gate() {
 }
 
 export default function App() {
+  // Keep the shell pinned to the visual viewport so the keyboard doesn't shove the page up.
+  useViewportPin()
   return (
     <AuthProvider>
       <Gate />

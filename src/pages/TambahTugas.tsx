@@ -2,9 +2,11 @@ import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
+import { Calendar, FileText, Folder, PencilLine, Sunrise } from 'lucide-react'
 import { ProjectPicker } from '@/components/ProjectPicker'
 import { BatchAddAgenda } from '@/components/BatchAddAgenda'
 import { Toggle } from '@/components/Toggle'
+import { Card, FloatingControlBar, SectionHeading } from '@/components/ui'
 import type { Project } from '@/lib/types'
 
 // Pre-fill / linkage passed via router state (from Continue / + Revision Agenda).
@@ -29,10 +31,12 @@ export function TambahTugas() {
   const [error, setError] = useState<string | null>(null)
   const [batch, setBatch] = useState(false)
 
-  const canSave = name.trim().length > 0 && project !== null && !saving
-
   async function handleSave() {
-    if (!profile || !project || !canSave) return
+    if (saving) return
+    if (!profile || !project || name.trim().length === 0) {
+      setError('Add an agenda name and pick a project first.')
+      return
+    }
     setSaving(true)
     setError(null)
 
@@ -64,21 +68,39 @@ export function TambahTugas() {
   }
 
   return (
-    <div className="space-y-4 pb-4">
-      <div className="flex items-center justify-between rounded-2xl border border-white/40 bg-white/70 px-4 py-3 shadow-glass">
-        <div>
-          <p className="text-sm font-semibold text-slate-800">Morning DSU</p>
-          <p className="text-xs text-slate-500">Add several agendas at once.</p>
-        </div>
-        <Toggle checked={batch} onChange={setBatch} label="Morning DSU" />
-      </div>
+    <div className="flex min-h-full flex-col gap-4 pb-28">
+      {/* Title is in the shared app header; this bar carries Cancel + the Morning-DSU toggle. */}
+      <FloatingControlBar
+        left={
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="px-2 py-1 text-sm font-medium text-sky"
+          >
+            Cancel
+          </button>
+        }
+        right={
+          <>
+            <span
+              className={`flex items-center gap-1.5 text-sm font-medium ${
+                batch ? 'text-navy' : 'text-slate-500'
+              }`}
+            >
+              <Sunrise className="h-4 w-4" />
+              Morning DSU
+            </span>
+            <Toggle checked={batch} onChange={setBatch} label="Morning DSU" />
+          </>
+        }
+      />
 
       {batch ? (
         <BatchAddAgenda />
       ) : (
         <>
-      <div>
-        <label className="mb-1.5 block text-sm font-medium text-slate-700">Agenda name</label>
+      <Card className="p-4">
+        <SectionHeading label="Agenda name" icon={<PencilLine className="h-4 w-4" />} />
         <input
           autoFocus
           type="text"
@@ -87,17 +109,15 @@ export function TambahTugas() {
           placeholder="What are you working on?"
           className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 outline-none focus:border-navy"
         />
-      </div>
+      </Card>
 
-      <div>
-        <label className="mb-1.5 block text-sm font-medium text-slate-700">Project</label>
+      <Card className="p-4">
+        <SectionHeading label="Project" icon={<Folder className="h-4 w-4" />} />
         <ProjectPicker value={project} onChange={setProject} />
-      </div>
+      </Card>
 
-      <div>
-        <label className="mb-1.5 block text-sm font-medium text-slate-700">
-          Description (optional)
-        </label>
+      <Card className="p-4">
+        <SectionHeading label="Description (optional)" icon={<FileText className="h-4 w-4" />} />
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
@@ -105,25 +125,24 @@ export function TambahTugas() {
           placeholder="Add any detail…"
           className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-navy"
         />
-      </div>
+      </Card>
 
-      <div>
-        <label className="mb-1.5 block text-sm font-medium text-slate-700">Due (optional)</label>
+      <Card className="p-4">
+        <SectionHeading label="Due (optional)" icon={<Calendar className="h-4 w-4" />} />
         <input
           type="date"
           value={dueDate}
           onChange={(e) => setDueDate(e.target.value)}
           className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 outline-none focus:border-navy"
         />
-      </div>
+      </Card>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       <button
         type="button"
         onClick={() => void handleSave()}
-        disabled={!canSave}
-        className="w-full rounded-full bg-navy py-3.5 text-base font-semibold text-white shadow-pill transition active:scale-[0.99] disabled:opacity-50"
+        className="absolute bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] left-1/2 z-20 w-[calc(100%-2rem)] max-w-[26rem] -translate-x-1/2 rounded-full bg-navy py-3.5 text-base font-semibold text-white shadow-pill transition active:scale-[0.99]"
       >
         {saving ? 'Saving…' : 'Save'}
       </button>

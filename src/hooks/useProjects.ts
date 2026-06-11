@@ -5,6 +5,7 @@ export interface ProjectRow {
   id: string
   name: string
   taskCount: number
+  archived: boolean
 }
 
 interface ProjectsState {
@@ -31,7 +32,7 @@ export function useProjects(uid: string | undefined): ProjectsState {
 
     async function load() {
       const [projectsRes, tasksRes, tagsRes] = await Promise.all([
-        supabase.from('projects').select('id, name, created_by').order('name'),
+        supabase.from('projects').select('id, name, created_by, archived').order('name'),
         supabase.from('tasks').select('id, project_id, pic_id'),
         supabase.from('task_tags').select('task:tasks(project_id)').eq('user_id', uid),
       ])
@@ -43,7 +44,12 @@ export function useProjects(uid: string | undefined): ProjectsState {
         return
       }
 
-      const projects = (projectsRes.data ?? []) as { id: string; name: string; created_by: string }[]
+      const projects = (projectsRes.data ?? []) as {
+        id: string
+        name: string
+        created_by: string
+        archived: boolean
+      }[]
       const tasks = (tasksRes.data ?? []) as { project_id: string; pic_id: string }[]
       const tags = (tagsRes.data ?? []) as unknown as { task: { project_id: string } | null }[]
 
@@ -60,6 +66,7 @@ export function useProjects(uid: string | undefined): ProjectsState {
         id: p.id,
         name: p.name,
         taskCount: counts.get(p.id) ?? 0,
+        archived: p.archived,
       }))
       const mine = all.filter((p) => {
         const created = projects.find((x) => x.id === p.id)?.created_by === uid

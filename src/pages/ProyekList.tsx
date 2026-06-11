@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
-import { useProjects } from '@/hooks/useProjects'
+import { useProjects, type ProjectRow } from '@/hooks/useProjects'
 
 type Scope = 'mine' | 'all'
 
@@ -19,6 +19,24 @@ export function ProyekList() {
   const [scope, setScope] = useState<Scope>(effectiveRole === 'employee' ? 'mine' : 'all')
 
   const rows = scope === 'mine' ? mine : all
+  const openRows = rows.filter((p) => !p.archived)
+  const closedRows = rows.filter((p) => p.archived)
+
+  function ProjectButton({ id, name, taskCount }: ProjectRow) {
+    return (
+      <button
+        key={id}
+        type="button"
+        onClick={() => navigate(`/proyek/${id}`)}
+        className="flex w-full items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3.5 text-left shadow-sm transition active:scale-[0.99]"
+      >
+        <span className="min-w-0 truncate font-semibold text-slate-900">{name}</span>
+        <span className="shrink-0 text-xs text-slate-500">
+          {taskCount} {taskCount === 1 ? 'task' : 'tasks'}
+        </span>
+      </button>
+    )
+  }
 
   return (
     <div className="space-y-4">
@@ -59,21 +77,28 @@ export function ProyekList() {
       )}
 
       {!loading && !error && rows.length > 0 && (
-        <div className="space-y-2">
-          {rows.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => navigate(`/proyek/${p.id}`)}
-              className="flex w-full items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3.5 text-left shadow-sm transition active:scale-[0.99]"
-            >
-              <span className="min-w-0 truncate font-semibold text-slate-900">{p.name}</span>
-              <span className="shrink-0 text-xs text-slate-500">
-                {p.taskCount} {p.taskCount === 1 ? 'task' : 'tasks'}
-              </span>
-            </button>
-          ))}
-        </div>
+        <>
+          {openRows.length > 0 && (
+            <div className="space-y-2">
+              {openRows.map((p) => (
+                <ProjectButton key={p.id} {...p} />
+              ))}
+            </div>
+          )}
+
+          {closedRows.length > 0 && (
+            <section>
+              <h3 className="mb-2 mt-2 text-sm font-semibold uppercase tracking-wide text-slate-400">
+                Closed Projects
+              </h3>
+              <div className="space-y-2 opacity-70">
+                {closedRows.map((p) => (
+                  <ProjectButton key={p.id} {...p} />
+                ))}
+              </div>
+            </section>
+          )}
+        </>
       )}
     </div>
   )
