@@ -39,8 +39,8 @@ export function TugasSaya() {
   )
 
   const [approvalOpen, setApprovalOpen] = useState(true)
-  // Today's / All Agenda peek-collapse: default collapsed, showing only the topmost item.
-  const [todayOpen, setTodayOpen] = useState(false)
+  // Today's Agenda defaults expanded (show all); All Agenda defaults to a peek (top item only).
+  const [todayOpen, setTodayOpen] = useState(true)
   const [allOpen, setAllOpen] = useState(false)
   const [showAllDone, setShowAllDone] = useState(false)
   // A pending confirm: either completing an agenda or deleting it.

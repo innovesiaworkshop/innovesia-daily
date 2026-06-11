@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useOutletContext, useParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
+import { useKeyboardOpen } from '@/hooks/useKeyboardOpen'
 import { useTaskDetail } from '@/hooks/useTaskDetail'
 import { useApprovalActions } from '@/hooks/useApprovalActions'
 import { isOverdue, todayISO } from '@/lib/dates'
@@ -11,7 +12,7 @@ import { TagRekan } from '@/components/TagRekan'
 import { CommentThread } from '@/components/CommentThread'
 import { ApprovalDialogs } from '@/components/ApprovalDialogs'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
-import { Badge, Card, PillButton, SectionHeading } from '@/components/ui'
+import { Badge, Card, FloatingControlBar, PillButton, SectionHeading } from '@/components/ui'
 import { Calendar, CircleDot, FileText, MessageSquare, Paperclip, UserPlus } from 'lucide-react'
 import type { LayoutOutletContext } from '@/components/Layout'
 
@@ -48,6 +49,7 @@ export function DetailTugas() {
 
   const [saving, setSaving] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
+  const keyboardOpen = useKeyboardOpen()
   const [description, setDescription] = useState('')
   const [confirmAction, setConfirmAction] = useState<'complete' | 'ask' | 'retract' | null>(null)
 
@@ -59,12 +61,13 @@ export function DetailTugas() {
     setDescription(task?.description ?? '')
   }, [task?.id, task?.description])
 
-  // Surface the agenda name + a back affordance in the shared app header (cleared on leave).
+  // Surface the agenda name as the shared app header title (cleared on leave). Back lives in
+  // the FloatingControlBar below — matching the project timeline — not the header chevron.
   const { setHeader } = useOutletContext<LayoutOutletContext>()
   useEffect(() => {
-    setHeader({ title: task?.name ?? null, onBack: () => navigate(-1) })
+    setHeader({ title: task?.name ?? null, onBack: null })
     return () => setHeader({ title: null, onBack: null })
-  }, [task?.name, setHeader, navigate])
+  }, [task?.name, setHeader])
 
   const isPic = !!profile && !!task && profile.id === task.pic_id
   const isEmployer = effectiveRole === 'employer'
@@ -144,6 +147,20 @@ export function DetailTugas() {
 
   return (
     <div className="space-y-4 pb-28">
+      {/* Back lives here (matching the project timeline), not in the app header. */}
+      <FloatingControlBar
+        left={
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="px-2 py-1 text-sm font-medium text-sky"
+          >
+            ← Back
+          </button>
+        }
+        right={null}
+      />
+
       {/* Body header: project link + PIC + badges (the name lives in the app header). */}
       <header>
         <button
@@ -298,21 +315,24 @@ export function DetailTugas() {
               )}
             </section>
           )}
-          <div className="absolute bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] left-1/2 z-20 flex w-[calc(100%-2rem)] max-w-[26rem] -translate-x-1/2 gap-2">
-            {!isEmployer && (
-              <PillButton
-                variant="secondary"
-                fullWidth
-                disabled={files.length === 0}
-                onClick={() => setConfirmAction('ask')}
-              >
-                Ask for Approval
+          {/* Hidden while the keyboard is up so it doesn't overlap the focused field. */}
+          {!keyboardOpen && (
+            <div className="absolute bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] left-1/2 z-20 flex w-[calc(100%-2rem)] max-w-[26rem] -translate-x-1/2 gap-2">
+              {!isEmployer && (
+                <PillButton
+                  variant="secondary"
+                  fullWidth
+                  disabled={files.length === 0}
+                  onClick={() => setConfirmAction('ask')}
+                >
+                  Ask for Approval
+                </PillButton>
+              )}
+              <PillButton variant="primary" fullWidth onClick={() => setConfirmAction('complete')}>
+                Mark as Complete
               </PillButton>
-            )}
-            <PillButton variant="primary" fullWidth onClick={() => setConfirmAction('complete')}>
-              Mark as Complete
-            </PillButton>
-          </div>
+            </div>
+          )}
         </>
       )}
 

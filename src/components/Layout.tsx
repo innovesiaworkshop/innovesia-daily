@@ -4,6 +4,7 @@ import { ChevronLeft } from 'lucide-react'
 import { BottomNav } from './BottomNav'
 import { RoleSwitcher } from './RoleSwitcher'
 import { useAuth } from '@/hooks/useAuth'
+import { useKeyboardOpen } from '@/hooks/useKeyboardOpen'
 import { theme } from '@/config/theme.registry'
 
 // Pages on dynamic routes (e.g. /proyek/:id, /tugas/:id) push their header title — and
@@ -41,6 +42,7 @@ export function Layout() {
   const pageTitle = titleFromPath ?? header.title ?? undefined
   const isDynamic = !titleFromPath && header.title != null
   const onBack = header.onBack ?? null
+  const keyboardOpen = useKeyboardOpen()
 
   return (
     <div className="relative mx-auto flex h-full max-w-md flex-col overflow-hidden">
@@ -97,7 +99,7 @@ export function Layout() {
                 <p className="mt-0.5 text-xs text-slate-500">{dayFormatter.format(new Date())}</p>
               )}
             </div>
-            {pathname !== '/tambah' && (
+            {pathname !== '/tambah' && !isDynamic && (
               <Link
                 to="/tambah"
                 className="shrink-0 rounded-full bg-navy px-3.5 py-2 text-sm font-semibold text-white shadow-pill transition active:scale-95"
@@ -112,8 +114,14 @@ export function Layout() {
         <RoleSwitcher />
       </header>
 
-      {/* The only scroll container; bottom padding clears the floating nav. */}
-      <main className="flex-1 overflow-y-auto px-4 pt-4 pb-[calc(env(safe-area-inset-bottom)+6rem)]">
+      {/* The only scroll container; bottom padding clears the floating nav. While the keyboard
+          is up the nav + pinned bars are hidden, so the reserved space collapses (no dead gap
+          between the form and the keyboard). */}
+      <main
+        className={`flex-1 overflow-y-auto px-4 pt-4 ${
+          keyboardOpen ? 'pb-4' : 'pb-[calc(env(safe-area-inset-bottom)+6rem)]'
+        }`}
+      >
         <Outlet context={{ setHeader } satisfies LayoutOutletContext} />
       </main>
 
