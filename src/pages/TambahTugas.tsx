@@ -1,10 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { useGoBack } from '@/hooks/useGoBack'
 import { useDelegate, type ForTarget } from '@/hooks/useDelegate'
-import { Calendar, CalendarCheck, CalendarDays, FileText, Folder, Paperclip, PencilLine, Sunrise, UserPlus } from 'lucide-react'
+import { Calendar, CalendarCheck, CalendarDays, Clock, FileText, Folder, Paperclip, PencilLine, Sunrise, UserPlus } from 'lucide-react'
 import { ProjectPicker } from '@/components/ProjectPicker'
 import { BatchAddAgenda } from '@/components/BatchAddAgenda'
 import { ForToggle } from '@/components/ForToggle'
@@ -13,7 +13,7 @@ import { StagedFiles, type StagedFile } from '@/components/StagedFiles'
 import { Toggle } from '@/components/Toggle'
 import { Card, FloatingControlBar, PinnedSaveButton, SectionHeading } from '@/components/ui'
 import { todayISO } from '@/lib/dates'
-import type { Project } from '@/lib/types'
+import type { AgendaType, Project } from '@/lib/types'
 
 // Pre-fill / linkage passed via router state (from Continue / + Revision Agenda).
 interface AddState {
@@ -38,6 +38,15 @@ export function TambahTugas() {
   // Teammates + PDFs are staged locally and committed after the task row exists.
   const [taggedIds, setTaggedIds] = useState<string[]>([])
   const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([])
+
+  // Task vs meeting. Typing "meeting" auto-selects Meeting until the user taps the chip.
+  const [agendaType, setAgendaType] = useState<AgendaType>('task')
+  const [typeOverridden, setTypeOverridden] = useState(false)
+  const [startTime, setStartTime] = useState('')
+  const [endTime, setEndTime] = useState('')
+  useEffect(() => {
+    if (!typeOverridden) setAgendaType(/meeting/i.test(name) ? 'meeting' : 'task')
+  }, [name, typeOverridden])
   // The agenda's date: defaults to today, can be backdated. Drives created_at/start_date
   // (and completed_at when "already done"). Capped at today — no future backdating.
   const [taskDate, setTaskDate] = useState(todayISO())
@@ -55,6 +64,10 @@ export function TambahTugas() {
     if (saving) return
     if (!profile || !project || name.trim().length === 0) {
       setError('Add an agenda name and pick a project first.')
+      return
+    }
+    if (agendaType === 'meeting' && startTime && endTime && endTime < startTime) {
+      setError('Meeting end time must be after the start time.')
       return
     }
     setSaving(true)
@@ -92,6 +105,9 @@ export function TambahTugas() {
         pic_id: picId,
         due_date: dueDate || null,
         description: description.trim() || null,
+        agenda_type: agendaType,
+        start_time: agendaType === 'meeting' ? startTime || null : null,
+        end_time: agendaType === 'meeting' ? endTime || null : null,
         ...dateFields,
       })
       .select('id')
@@ -105,7 +121,14 @@ export function TambahTugas() {
 
     // Commit staged teammates + PDFs now that the task exists (best-effort; the agenda is saved).
     let attachmentFailed = false
-    const tagRows = taggedIds.filter((uid) => uid !== picId).map((uid) => ({ task_id: taskId, user_id: uid }))
+    // For a meeting, tagged people are invitees (RSVP starts pending); for a task they're CC.
+    const tagRows = taggedIds
+      .filter((uid) => uid !== picId)
+      .map((uid) => ({
+        task_id: taskId,
+        user_id: uid,
+        ...(agendaType === 'meeting' ? { rsvp_status: 'pending' } : {}),
+      }))
     if (tagRows.length > 0) {
       const { error: tagErr } = await supabase.from('task_tags').insert(tagRows)
       if (tagErr) attachmentFailed = true
@@ -172,6 +195,26 @@ export function TambahTugas() {
         <ForToggle value={forTarget} onChange={setForTarget} targetLabel={target.label} />
       )}
 
+      {/* Task vs meeting. */}
+      <div className="flex rounded-full border border-white/50 bg-white/40 p-1 backdrop-blur">
+        {(['task', 'meeting'] as AgendaType[]).map((t) => (
+          <button
+            key={t}
+            type="button"
+            aria-pressed={agendaType === t}
+            onClick={() => {
+              setAgendaType(t)
+              setTypeOverridden(true)
+            }}
+            className={`flex-1 rounded-full py-2 text-sm font-semibold capitalize transition active:scale-[0.99] ${
+              agendaType === t ? 'bg-navy text-white shadow-sm' : 'text-slate-600'
+            }`}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
+
       <Card className="p-4">
         <SectionHeading label="Agenda name" icon={<PencilLine className="h-4 w-4" />} />
         <input
@@ -189,8 +232,35 @@ export function TambahTugas() {
         <ProjectPicker value={project} onChange={setProject} />
       </Card>
 
+      {agendaType === 'meeting' && (
+        <Card className="p-4">
+          <SectionHeading label="Time" icon={<Clock className="h-4 w-4" />} />
+          <div className="flex items-center gap-2">
+            <input
+              type="time"
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+              aria-label="Start time"
+              className="flex-1 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 outline-none focus:border-navy"
+            />
+            <span className="text-slate-400">–</span>
+            <input
+              type="time"
+              value={endTime}
+              min={startTime || undefined}
+              onChange={(e) => setEndTime(e.target.value)}
+              aria-label="End time"
+              className="flex-1 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 outline-none focus:border-navy"
+            />
+          </div>
+        </Card>
+      )}
+
       <Card className="p-4">
-        <SectionHeading label="Tag teammates (optional)" icon={<UserPlus className="h-4 w-4" />} />
+        <SectionHeading
+          label={agendaType === 'meeting' ? 'Invitees (optional)' : 'Tag teammates (optional)'}
+          icon={<UserPlus className="h-4 w-4" />}
+        />
         <StagedTags value={taggedIds} onChange={setTaggedIds} excludeId={forTarget === 'bagus' ? target.id : profile?.id} />
       </Card>
 

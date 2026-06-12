@@ -21,11 +21,15 @@ export type TaskStatus = 'awaiting_approval' | 'on_progress' | 'done'
 
 export type ApprovalState = 'na' | 'pending' | 'approved' | 'revision_requested'
 
+// 'task' (default) or a 'meeting' that carries a start/end time-of-day.
+export type AgendaType = 'task' | 'meeting'
+
 // A task row joined with its project name, as listed on the home screen.
 export interface TaskWithProject {
   id: string
   name: string
   project_id: string
+  pic_id: string
   due_date: string | null
   status: TaskStatus
   approval_state: ApprovalState
@@ -35,6 +39,10 @@ export interface TaskWithProject {
   // completed_at timestamps a completion so "Completed" can reset each day.
   planned_for: string | null
   completed_at: string | null
+  // Meeting fields ('HH:MM:SS' strings, or null for tasks).
+  agenda_type: AgendaType
+  start_time: string | null
+  end_time: string | null
   project: { name: string } | null
 }
 
@@ -53,6 +61,9 @@ export interface TaskDetail {
   revision_note: string | null
   planned_for: string | null
   completed_at: string | null
+  agenda_type: AgendaType
+  start_time: string | null
+  end_time: string | null
   project: { name: string } | null
   pic: { name: string } | null
 }
@@ -68,9 +79,13 @@ export interface TaskFile {
   file_name: string
 }
 
-// A tagged teammate (task_tags joined with their profile name).
+export type RsvpStatus = 'pending' | 'accepted' | 'declined'
+
+// A tagged teammate (task_tags joined with their profile name). rsvp_status is null for a
+// normal CC tag; set when the row is a meeting invitee.
 export interface TaskTag {
   user_id: string
+  rsvp_status: RsvpStatus | null
   user: { name: string } | null
 }
 

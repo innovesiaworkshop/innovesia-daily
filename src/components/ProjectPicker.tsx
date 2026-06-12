@@ -22,6 +22,8 @@ export function ProjectPicker({
     supabase
       .from('projects')
       .select('id, name')
+      // Closed (archived) projects can't take new agendas, so keep them out of the picker.
+      .eq('archived', false)
       .order('name')
       .then(({ data }) => setProjects((data ?? []) as Project[]))
   }, [])

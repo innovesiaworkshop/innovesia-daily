@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { ArrowRightLeft, Check, Trash2 } from 'lucide-react'
 import { Badge, Card } from '@/components/ui'
+import { MeetingBadge } from '@/components/MeetingBadge'
 import { formatDueDate, formatTimestampDate, isOverdue } from '@/lib/dates'
 import type { TaskWithProject } from '@/lib/types'
 
@@ -37,6 +38,12 @@ export function TaskCard({
         <h3 className="truncate font-semibold leading-snug text-slate-900">{task.name}</h3>
         {overdue && <Badge tone="pending">Warning</Badge>}
       </div>
+      <MeetingBadge
+        agendaType={task.agenda_type}
+        startTime={task.start_time}
+        endTime={task.end_time}
+        className="mt-1"
+      />
       <p className="mt-1 text-xs text-slate-500">
         {isDone && task.completed_at
           ? `Done: ${formatTimestampDate(task.completed_at)}`

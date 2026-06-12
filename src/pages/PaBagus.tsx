@@ -5,9 +5,10 @@ import { supabase } from '@/lib/supabase'
 import { useGoBack } from '@/hooks/useGoBack'
 import { useDelegate } from '@/hooks/useDelegate'
 import { Badge, Card, FloatingControlBar } from '@/components/ui'
+import { MeetingBadge } from '@/components/MeetingBadge'
 import { todayISO } from '@/lib/dates'
 import type { LayoutOutletContext } from '@/components/Layout'
-import type { TaskStatus } from '@/lib/types'
+import type { AgendaType, TaskStatus } from '@/lib/types'
 
 type Tone = 'info' | 'pending' | 'success'
 const STATUS: Record<TaskStatus, { label: string; tone: Tone }> = {
@@ -29,6 +30,9 @@ interface Row {
   status: TaskStatus
   planned_for: string | null
   due_date: string | null
+  agenda_type: AgendaType
+  start_time: string | null
+  end_time: string | null
   project: { name: string } | null
 }
 
@@ -55,7 +59,9 @@ export function PaBagus() {
     setError(null)
     supabase
       .from('tasks')
-      .select('id, name, status, planned_for, due_date, project:projects(name)')
+      .select(
+        'id, name, status, planned_for, due_date, agenda_type, start_time, end_time, project:projects(name)',
+      )
       .eq('pic_id', target.id)
       .neq('status', 'done')
       .order('planned_for', { ascending: true })
@@ -109,6 +115,12 @@ export function PaBagus() {
                     {t.project?.name ?? 'No project'}
                     {due ? ` · Due ${due}` : ''}
                   </span>
+                  <MeetingBadge
+                    agendaType={t.agenda_type}
+                    startTime={t.start_time}
+                    endTime={t.end_time}
+                    className="mt-1"
+                  />
                 </span>
                 <Badge tone={s.tone}>{s.label}</Badge>
               </button>

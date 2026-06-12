@@ -8,6 +8,7 @@ import { useMyTasks } from '@/hooks/useMyTasks'
 import { useManagerStack } from '@/hooks/useManagerStack'
 import { useApprovalActions } from '@/hooks/useApprovalActions'
 import { TaskCard } from '@/components/TaskCard'
+import { Invitations } from '@/components/Invitations'
 import { AwaitingApprovalCard } from '@/components/AwaitingApprovalCard'
 import { ApprovalStack } from '@/components/ApprovalStack'
 import { ApprovalDialogs } from '@/components/ApprovalDialogs'
@@ -192,6 +193,9 @@ export function TugasSaya() {
           </section>
         )}
 
+        {/* Pending meeting invitations — accepting puts the meeting on the agenda below. */}
+        <Invitations onChanged={refetch} />
+
         {loading && <p className="pt-6 text-center text-sm text-slate-400">Loading…</p>}
 
         {error && (
@@ -256,18 +260,23 @@ export function TugasSaya() {
               />
               {todayTasks.length > 0 ? (
                 <div className="space-y-3">
-                  {(todayOpen ? todayTasks : todayTasks.slice(0, 1)).map((t) => (
-                    <TaskCard
-                      key={t.id}
-                      task={t}
-                      onComplete={() => setPending({ task: t, kind: 'complete' })}
-                      onDelete={() => setPending({ task: t, kind: 'delete' })}
-                      moveAction={{
-                        label: 'Move to All Agenda',
-                        onMove: () => void setPlannedFor(t, null),
-                      }}
-                    />
-                  ))}
+                  {(todayOpen ? todayTasks : todayTasks.slice(0, 1)).map((t) => {
+                    // Meetings I only attend (not own) are read-only — no actions.
+                    const owned = t.pic_id === profile?.id
+                    return (
+                      <TaskCard
+                        key={t.id}
+                        task={t}
+                        onComplete={owned ? () => setPending({ task: t, kind: 'complete' }) : undefined}
+                        onDelete={owned ? () => setPending({ task: t, kind: 'delete' }) : undefined}
+                        moveAction={
+                          owned
+                            ? { label: 'Move to All Agenda', onMove: () => void setPlannedFor(t, null) }
+                            : undefined
+                        }
+                      />
+                    )
+                  })}
                 </div>
               ) : (
                 <p className="text-sm text-slate-400">Nothing here yet.</p>
@@ -307,18 +316,22 @@ export function TugasSaya() {
               />
               {backlog.length > 0 ? (
                 <div className="space-y-3">
-                  {(allOpen ? backlog : backlog.slice(0, 1)).map((t) => (
-                    <TaskCard
-                      key={t.id}
-                      task={t}
-                      onComplete={() => setPending({ task: t, kind: 'complete' })}
-                      onDelete={() => setPending({ task: t, kind: 'delete' })}
-                      moveAction={{
-                        label: "Move to Today's Agenda",
-                        onMove: () => void setPlannedFor(t, today),
-                      }}
-                    />
-                  ))}
+                  {(allOpen ? backlog : backlog.slice(0, 1)).map((t) => {
+                    const owned = t.pic_id === profile?.id
+                    return (
+                      <TaskCard
+                        key={t.id}
+                        task={t}
+                        onComplete={owned ? () => setPending({ task: t, kind: 'complete' }) : undefined}
+                        onDelete={owned ? () => setPending({ task: t, kind: 'delete' }) : undefined}
+                        moveAction={
+                          owned
+                            ? { label: "Move to Today's Agenda", onMove: () => void setPlannedFor(t, today) }
+                            : undefined
+                        }
+                      />
+                    )
+                  })}
                 </div>
               ) : (
                 <p className="text-sm text-slate-400">Nothing here yet.</p>

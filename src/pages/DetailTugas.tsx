@@ -10,6 +10,8 @@ import { useApprovalActions } from '@/hooks/useApprovalActions'
 import { isOverdue, todayISO } from '@/lib/dates'
 import { AgendaStatus, type AgendaStatusKey } from '@/components/AgendaStatus'
 import { TaskFiles } from '@/components/TaskFiles'
+import { MeetingBadge } from '@/components/MeetingBadge'
+import { MeetingInvitees } from '@/components/MeetingInvitees'
 import { TagRekan } from '@/components/TagRekan'
 import { CommentThread } from '@/components/CommentThread'
 import { ApprovalDialogs } from '@/components/ApprovalDialogs'
@@ -176,6 +178,11 @@ export function DetailTugas() {
         </button>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <span className="text-xs text-slate-500">PIC: {task.pic?.name || 'No name'}</span>
+          <MeetingBadge
+            agendaType={task.agenda_type}
+            startTime={task.start_time}
+            endTime={task.end_time}
+          />
           {approvalBadge && (
             <Badge tone={task.approval_state === 'revision_requested' ? 'danger' : 'pending'}>
               {approvalBadge}
@@ -275,8 +282,20 @@ export function DetailTugas() {
       </Field>
 
       {/* Notify teammate (CC) */}
-      <Field label="Notify teammate (CC)" icon={<UserPlus className="h-4 w-4" />}>
-        {canEdit ? (
+      <Field
+        label={task.agenda_type === 'meeting' ? 'Invitees' : 'Notify teammate (CC)'}
+        icon={<UserPlus className="h-4 w-4" />}
+      >
+        {task.agenda_type === 'meeting' ? (
+          <MeetingInvitees
+            taskId={task.id}
+            picId={task.pic_id}
+            tags={tags}
+            canInvite={canEdit}
+            viewerId={profile?.id ?? ''}
+            reloadTags={reloadTags}
+          />
+        ) : canEdit ? (
           <TagRekan taskId={task.id} picId={task.pic_id} tags={tags} reloadTags={reloadTags} />
         ) : (
           <div className="flex flex-wrap gap-2">

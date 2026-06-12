@@ -38,6 +38,7 @@ export function useTaskDetail(taskId: string | undefined): TaskDetailHook {
       .select(
         'id, name, project_id, pic_id, start_date, due_date, status, needs_approval, ' +
           'approval_state, description, revision_note, planned_for, completed_at, ' +
+          'agenda_type, start_time, end_time, ' +
           // tasks→profiles is ambiguous (pic_id + the task_tags join), so name the FK.
           'project:projects(name), pic:profiles!tasks_pic_id_fkey(name)',
       )
@@ -65,7 +66,7 @@ export function useTaskDetail(taskId: string | undefined): TaskDetailHook {
     if (!taskId) return
     const { data } = await supabase
       .from('task_tags')
-      .select('user_id, user:profiles(name)')
+      .select('user_id, rsvp_status, user:profiles(name)')
       .eq('task_id', taskId)
     setState((s) => ({ ...s, tags: (data ?? []) as unknown as TaskTag[] }))
   }, [taskId])

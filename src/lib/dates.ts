@@ -50,3 +50,10 @@ const dateTimeFormatter = new Intl.DateTimeFormat('id-ID', {
 export function formatDateTime(iso: string): string {
   return dateTimeFormatter.format(new Date(iso))
 }
+
+// "09:00–10:00" (or just "09:00") from Postgres `time` strings ('HH:MM:SS'). null when no start.
+export function formatTimeRange(start: string | null, end: string | null): string | null {
+  if (!start) return null
+  const hm = (t: string) => t.slice(0, 5)
+  return end ? `${hm(start)}–${hm(end)}` : hm(start)
+}
