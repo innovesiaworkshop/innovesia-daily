@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useLocation } from 'react-router-dom'
-import { Calendar, CheckCircle2, ChevronDown, Clock, ListTodo, Sparkles } from 'lucide-react'
+import { Link, useLocation } from 'react-router-dom'
+import { Calendar, CheckCircle2, ChevronDown, ChevronRight, Clock, ListTodo, Sparkles, UserCog } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
+import { useDelegate } from '@/hooks/useDelegate'
 import { useMyTasks } from '@/hooks/useMyTasks'
 import { useManagerStack } from '@/hooks/useManagerStack'
 import { useApprovalActions } from '@/hooks/useApprovalActions'
@@ -31,6 +32,9 @@ export function TugasSaya() {
   const isEmployer = effectiveRole === 'employer'
   const managerStack = useManagerStack()
   const approvalActions = useApprovalActions()
+
+  // Delegate-only: entry to the PA board.
+  const { isAssistant, target } = useDelegate()
 
   // A toast can be handed over via router state (e.g. after saving an agenda).
   const location = useLocation()
@@ -150,6 +154,25 @@ export function TugasSaya() {
       />
 
       <div className="space-y-6 pb-4">
+        {/* Delegate-only: jump to the PA board for the delegate target. */}
+        {isAssistant && (
+          <Link
+            to="/pa"
+            className="flex items-center justify-between gap-3 rounded-3xl border border-white/40 bg-white/80 p-4 shadow-glass transition active:scale-[0.99]"
+          >
+            <span className="flex items-center gap-3">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-navy/10 text-navy">
+                <UserCog className="h-5 w-5" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-bold text-slate-900">{target.label}</span>
+                <span className="block text-xs text-slate-500">Manage his agenda</span>
+              </span>
+            </span>
+            <ChevronRight className="h-5 w-5 shrink-0 text-slate-400" />
+          </Link>
+        )}
+
         {/* Employer-only: team approvals to kickstart the day. */}
         {isEmployer && (
           <section>

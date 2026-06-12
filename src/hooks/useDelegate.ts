@@ -10,3 +10,11 @@ export function useDelegate(): { isAssistant: boolean; target: typeof DELEGATE_T
   const { session } = useAuth()
   return { isAssistant: isAssistant(session?.user.email), target: DELEGATE_TARGET }
 }
+
+// Edit permission (UI gate): you can act as the PIC if it's your own task, OR you're a
+// delegate and the task belongs to your delegate target. RLS already permits the write.
+export function useCanActAsPic(picId?: string | null): boolean {
+  const { profile, session } = useAuth()
+  if (!profile || !picId) return false
+  return profile.id === picId || (isAssistant(session?.user.email) && picId === DELEGATE_TARGET.id)
+}

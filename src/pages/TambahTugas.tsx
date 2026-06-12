@@ -4,10 +4,12 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { useGoBack } from '@/hooks/useGoBack'
 import { useDelegate, type ForTarget } from '@/hooks/useDelegate'
-import { Calendar, CalendarCheck, CalendarDays, FileText, Folder, PencilLine, Sunrise } from 'lucide-react'
+import { Calendar, CalendarCheck, CalendarDays, FileText, Folder, Paperclip, PencilLine, Sunrise, UserPlus } from 'lucide-react'
 import { ProjectPicker } from '@/components/ProjectPicker'
 import { BatchAddAgenda } from '@/components/BatchAddAgenda'
 import { ForToggle } from '@/components/ForToggle'
+import { StagedTags } from '@/components/StagedTags'
+import { StagedFiles, type StagedFile } from '@/components/StagedFiles'
 import { Toggle } from '@/components/Toggle'
 import { Card, FloatingControlBar, PinnedSaveButton, SectionHeading } from '@/components/ui'
 import { todayISO } from '@/lib/dates'
@@ -19,6 +21,8 @@ interface AddState {
   presetName?: string
   presetDescription?: string
   closeOriginId?: string
+  /** Default the assistant "For:" toggle (e.g. the PA board opens it on the delegate target). */
+  presetForTarget?: ForTarget
 }
 
 export function TambahTugas() {
@@ -31,6 +35,9 @@ export function TambahTugas() {
   const [project, setProject] = useState<Project | null>(preset.presetProject ?? null)
   const [description, setDescription] = useState(preset.presetDescription ?? '')
   const [dueDate, setDueDate] = useState('')
+  // Teammates + PDFs are staged locally and committed after the task row exists.
+  const [taggedIds, setTaggedIds] = useState<string[]>([])
+  const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([])
   // The agenda's date: defaults to today, can be backdated. Drives created_at/start_date
   // (and completed_at when "already done"). Capped at today — no future backdating.
   const [taskDate, setTaskDate] = useState(todayISO())
@@ -42,7 +49,7 @@ export function TambahTugas() {
 
   // Assistant-only: file this agenda for self or the delegate target.
   const { isAssistant, target } = useDelegate()
-  const [forTarget, setForTarget] = useState<ForTarget>('self')
+  const [forTarget, setForTarget] = useState<ForTarget>(preset.presetForTarget ?? 'self')
 
   async function handleSave() {
     if (saving) return
@@ -53,30 +60,68 @@ export function TambahTugas() {
     setSaving(true)
     setError(null)
 
-    // Local-midnight timestamp of the chosen date — overrides created_at's now() default and,
-    // when "already done", doubles as completed_at (equal → cycle time = 0, never earlier).
-    const [y, m, d] = taskDate.split('-').map(Number)
-    const createdISO = new Date(y, m - 1, d).toISOString()
     const today = todayISO()
+    const isFuture = taskDate > today
+    // Local-midnight timestamp of the chosen date (for backdating / completion).
+    const [y, m, d] = taskDate.split('-').map(Number)
+    const chosenMidnightISO = new Date(y, m - 1, d).toISOString()
 
-    // Backdate via created_at/start_date. Already-done → done now, sitting on the chosen day;
-    // otherwise a normal agenda planned for today so it lands in Today's Agenda.
-    const { error: insErr } = await supabase.from('tasks').insert({
-      name: name.trim(),
-      project_id: project.id,
-      pic_id: forTarget === 'bagus' ? target.id : profile.id,
-      due_date: dueDate || null,
-      description: description.trim() || null,
-      start_date: taskDate,
-      created_at: createdISO,
-      ...(alreadyDone
-        ? { status: 'done', completed_at: createdISO, planned_for: taskDate }
-        : { planned_for: today }),
-    })
-    if (insErr) {
+    const picId = forTarget === 'bagus' ? target.id : profile.id
+
+    // Date semantics:
+    // • Already done (clamped ≤ today) → completed work sitting on the chosen day.
+    // • Open + future → created NOW but scheduled forward (lands on that day's agenda).
+    // • Open + today/past → backdated created_at, but planned for today so it still surfaces.
+    const dateFields = alreadyDone
+      ? {
+          start_date: taskDate,
+          created_at: chosenMidnightISO,
+          status: 'done',
+          completed_at: chosenMidnightISO,
+          planned_for: taskDate,
+        }
+      : isFuture
+        ? { start_date: taskDate, created_at: new Date().toISOString(), planned_for: taskDate }
+        : { start_date: taskDate, created_at: chosenMidnightISO, planned_for: today }
+
+    const { data: created, error: insErr } = await supabase
+      .from('tasks')
+      .insert({
+        name: name.trim(),
+        project_id: project.id,
+        pic_id: picId,
+        due_date: dueDate || null,
+        description: description.trim() || null,
+        ...dateFields,
+      })
+      .select('id')
+      .single()
+    if (insErr || !created) {
       setSaving(false)
       setError("Couldn't save. Try again.")
       return
+    }
+    const taskId = created.id as string
+
+    // Commit staged teammates + PDFs now that the task exists (best-effort; the agenda is saved).
+    let attachmentFailed = false
+    const tagRows = taggedIds.filter((uid) => uid !== picId).map((uid) => ({ task_id: taskId, user_id: uid }))
+    if (tagRows.length > 0) {
+      const { error: tagErr } = await supabase.from('task_tags').insert(tagRows)
+      if (tagErr) attachmentFailed = true
+    }
+    for (const sf of stagedFiles) {
+      const safeName = sf.file.name.replace(/[^\w.\-]+/g, '_')
+      const path = `${taskId}/${Date.now()}-${safeName}`
+      const { error: upErr } = await supabase.storage.from('task-files').upload(path, sf.file)
+      if (upErr) {
+        attachmentFailed = true
+        continue
+      }
+      const { error: fileErr } = await supabase
+        .from('task_files')
+        .insert({ task_id: taskId, file_path: path, file_name: sf.displayName.trim() || sf.file.name })
+      if (fileErr) attachmentFailed = true
     }
 
     // Revision flow: close the original agenda now that its revision exists.
@@ -88,7 +133,7 @@ export function TambahTugas() {
     }
 
     setSaving(false)
-    navigate('/', { state: { toast: 'Saved ✓' } })
+    navigate('/', { state: { toast: attachmentFailed ? 'Saved ✓ (some attachments failed)' : 'Saved ✓' } })
   }
 
   return (
@@ -145,14 +190,13 @@ export function TambahTugas() {
       </Card>
 
       <Card className="p-4">
-        <SectionHeading label="Description (optional)" icon={<FileText className="h-4 w-4" />} />
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows={3}
-          placeholder="Add any detail…"
-          className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-navy"
-        />
+        <SectionHeading label="Tag teammates (optional)" icon={<UserPlus className="h-4 w-4" />} />
+        <StagedTags value={taggedIds} onChange={setTaggedIds} excludeId={forTarget === 'bagus' ? target.id : profile?.id} />
+      </Card>
+
+      <Card className="p-4">
+        <SectionHeading label="Files (optional)" icon={<Paperclip className="h-4 w-4" />} />
+        <StagedFiles value={stagedFiles} onChange={setStagedFiles} />
       </Card>
 
       <Card className="p-4">
@@ -166,26 +210,47 @@ export function TambahTugas() {
       </Card>
 
       <Card className="p-4">
+        <SectionHeading label="Description (optional)" icon={<FileText className="h-4 w-4" />} />
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={3}
+          placeholder="Add any detail…"
+          className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-navy"
+        />
+      </Card>
+
+      <Card className="p-4">
         <SectionHeading label="Date" icon={<CalendarDays className="h-4 w-4" />} />
         <input
           type="date"
           value={taskDate}
-          max={todayISO()}
+          // Completed work can't be in the future; an open task can be scheduled ahead.
+          max={alreadyDone ? todayISO() : undefined}
           onChange={(e) => setTaskDate(e.target.value || todayISO())}
           className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 outline-none focus:border-navy"
         />
-        <p className="mt-1.5 text-xs text-slate-400">Backdate to log work from an earlier day.</p>
+        <p className="mt-1.5 text-xs text-slate-400">
+          {alreadyDone
+            ? 'Saves as completed on the chosen date.'
+            : 'Backdate past work, or pick a future day to schedule it.'}
+        </p>
 
         <label className="mt-3 flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
           <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
             <CalendarCheck className="h-4 w-4 text-navy" />
             Already done?
           </span>
-          <Toggle checked={alreadyDone} onChange={setAlreadyDone} label="Already done" />
+          <Toggle
+            checked={alreadyDone}
+            onChange={(next) => {
+              setAlreadyDone(next)
+              // Can't complete a future task — clamp a scheduled date back to today.
+              if (next && taskDate > todayISO()) setTaskDate(todayISO())
+            }}
+            label="Already done"
+          />
         </label>
-        {alreadyDone && (
-          <p className="mt-1.5 text-xs text-slate-400">Saves as completed on the chosen date.</p>
-        )}
       </Card>
 
       {error && <p className="text-sm text-red-600">{error}</p>}

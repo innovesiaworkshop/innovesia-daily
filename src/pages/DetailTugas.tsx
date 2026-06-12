@@ -3,6 +3,7 @@ import { useNavigate, useOutletContext, useParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { useGoBack } from '@/hooks/useGoBack'
+import { useCanActAsPic } from '@/hooks/useDelegate'
 import { useKeyboardOpen } from '@/hooks/useKeyboardOpen'
 import { useTaskDetail } from '@/hooks/useTaskDetail'
 import { useApprovalActions } from '@/hooks/useApprovalActions'
@@ -71,16 +72,17 @@ export function DetailTugas() {
     return () => setHeader({ title: null, onBack: null })
   }, [task?.name, setHeader])
 
-  const isPic = !!profile && !!task && profile.id === task.pic_id
+  // "Acts as PIC" = the real PIC, or a delegate managing their target's task.
+  const actsAsPic = useCanActAsPic(task?.pic_id)
   const isEmployer = effectiveRole === 'employer'
   const isTagged = useMemo(
     () => !!profile && tags.some((t) => t.user_id === profile.id),
     [profile, tags],
   )
-  const canComment = isPic || isEmployer || isTagged
+  const canComment = actsAsPic || isEmployer || isTagged
 
   const locked = task?.status === 'awaiting_approval'
-  const canEdit = isPic && !locked // PIC fully edits only in the editable state
+  const canEdit = actsAsPic && !locked // PIC (or delegate) fully edits only in the editable state
 
   const today = todayISO()
 
@@ -191,7 +193,7 @@ export function DetailTugas() {
           {actionError && <p className="mt-1 text-sm text-red-600">{actionError}</p>}
           {task.approval_state === 'pending' && (
             <div className="mt-2.5 flex flex-wrap gap-2">
-              {isPic && (
+              {actsAsPic && (
                 <PillButton variant="secondary" onClick={() => setConfirmAction('retract')}>
                   Retract
                 </PillButton>
