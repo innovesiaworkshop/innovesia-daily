@@ -4,8 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --mode innovesia",
+    "dev:innovesia": "vite --mode innovesia",
+    "dev:mbg": "vite --mode yayasanmbg",
     "build": "tsc -b && vite build",
+    "build:innovesia": "tsc -b && vite build --mode innovesia",
+    "build:mbg": "tsc -b && vite build --mode yayasanmbg",
     "preview": "vite preview",
     "lint": "tsc --noEmit"
   },

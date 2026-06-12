@@ -1,10 +1,16 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { useDailyCompletions } from '@/hooks/useDailyCompletions'
+import { useCapacityData } from '@/hooks/useCapacityData'
 import { DashboardCharts } from '@/components/DashboardCharts'
+import { CapacityCharts } from '@/components/CapacityCharts'
+import { ScopeSelector } from '@/components/ScopeSelector'
 import { Badge, Card } from '@/components/ui'
 import { localDateISO } from '@/lib/dates'
 import type { DailyCompletion } from '@/lib/types'
+
+// Status donut needs a 14-day "done" window, scoped to match the rest of the dashboard.
+const DONE_WINDOW_DAYS = 14
 
 const dayHeader = new Intl.DateTimeFormat('en-GB', {
   weekday: 'short',
@@ -40,16 +46,42 @@ function groupByDay(items: DailyCompletion[]): DayGroup[] {
 
 export function Dashboard() {
   const { effectiveRole } = useAuth()
-  const { members, completions, statusCounts, loading, error } = useDailyCompletions()
+  const { members, completions, loading, error } = useDailyCompletions()
+  const capacity = useCapacityData()
 
-  const byMember = useMemo(
-    () =>
-      members.map((m) => ({
-        member: m,
-        days: groupByDay(completions.filter((c) => c.pic?.id === m.id)),
-      })),
-    [members, completions],
+  // One scope drives the WHOLE dashboard — capacity charts and Daily Completions alike.
+  const [scope, setScope] = useState('all')
+  const scopeOptions = useMemo(
+    () => [
+      { id: 'all', label: 'All team' },
+      ...capacity.members.map((m) => ({ id: m.id, label: m.name || 'No name' })),
+    ],
+    [capacity.members],
   )
+
+  const scopedCompletions = useMemo(
+    () => (scope === 'all' ? completions : completions.filter((c) => c.pic?.id === scope)),
+    [scope, completions],
+  )
+
+  // Donut counts, scoped from the capacity task set (live open + done-in-window).
+  const scopedStatusCounts = useMemo(() => {
+    const cutoff = Date.now() - DONE_WINDOW_DAYS * 86_400_000
+    const ts = scope === 'all' ? capacity.tasks : capacity.tasks.filter((t) => t.pic_id === scope)
+    return {
+      in_progress: ts.filter((t) => t.status === 'on_progress').length,
+      awaiting_approval: ts.filter((t) => t.status === 'awaiting_approval').length,
+      done: ts.filter((t) => t.completed_at != null && new Date(t.completed_at).getTime() >= cutoff).length,
+    }
+  }, [scope, capacity.tasks])
+
+  const byMember = useMemo(() => {
+    const visible = scope === 'all' ? members : members.filter((m) => m.id === scope)
+    return visible.map((m) => ({
+      member: m,
+      days: groupByDay(scopedCompletions.filter((c) => c.pic?.id === m.id)),
+    }))
+  }, [scope, members, scopedCompletions])
 
   // Gate on the effective role so the Manager/Employee switcher controls access.
   if (effectiveRole !== 'employer') {
@@ -60,6 +92,21 @@ export function Dashboard() {
 
   return (
     <div className="space-y-6">
+      {/* Team capacity — throughput/backlog framed as LOAD (not a ranking). */}
+      <div>
+        <h2 className="text-xl font-bold tracking-tight text-slate-900">Team Capacity</h2>
+        <p className="text-sm text-slate-500">Are we over capacity? Throughput vs backlog, by pace.</p>
+      </div>
+
+      {/* One scope selector at the very top — drives every chart below, Daily Completions too. */}
+      <ScopeSelector options={scopeOptions} value={scope} onChange={setScope} />
+
+      {capacity.loading && <p className="pt-2 text-center text-sm text-slate-400">Loading…</p>}
+      {capacity.error && <p className="pt-2 text-center text-sm text-red-600">{capacity.error}</p>}
+      {!capacity.loading && !capacity.error && (
+        <CapacityCharts members={capacity.members} tasks={capacity.tasks} scope={scope} />
+      )}
+
       <div>
         <h2 className="text-xl font-bold tracking-tight text-slate-900">Daily Completions</h2>
         <p className="text-sm text-slate-500">Last 14 days</p>
@@ -69,11 +116,7 @@ export function Dashboard() {
       {error && <p className="pt-6 text-center text-sm text-red-600">{error}</p>}
 
       {!loading && !error && (
-        <DashboardCharts
-          completions={completions}
-          members={members}
-          statusCounts={statusCounts}
-        />
+        <DashboardCharts completions={scopedCompletions} statusCounts={scopedStatusCounts} />
       )}
 
       {!loading &&

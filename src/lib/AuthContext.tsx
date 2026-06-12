@@ -1,6 +1,7 @@
 import { createContext, useCallback, useEffect, useState, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
+import { isAllowedEmail } from '@/config/access'
 import type { Profile, Role } from '@/lib/types'
 
 export interface AuthContextValue {
@@ -17,6 +18,8 @@ export interface AuthContextValue {
   setViewAsRole: (role: Role | null) => void
   /** The role all role-gated UI should read: viewAsRole when set, else the real role. */
   effectiveRole: Role
+  /** Set when a sign-in is rejected by the email allowlist (shown on the Login screen). */
+  authError: string | null
   signInWithGoogle: () => Promise<void>
   signOut: () => Promise<void>
 }
@@ -43,6 +46,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [viewAsRole, setViewAsRole] = useState<Role | null>(null)
+  const [authError, setAuthError] = useState<string | null>(null)
+
+  // Allowlist gate: only sessions whose email is on the company domain or in the explicit
+  // allowlist are kept; anyone else is signed out immediately. Returns the session if allowed,
+  // otherwise null. (The Google consent screen is the primary gate; this backs it up in-app.)
+  const enforceAllowed = useCallback(async (next: Session | null): Promise<Session | null> => {
+    if (next && !isAllowedEmail(next.user.email)) {
+      setAuthError('That account isn’t allowed. Use your Innovesia account.')
+      await supabase.auth.signOut()
+      return null
+    }
+    return next
+  }, [])
 
   useEffect(() => {
     let active = true
@@ -51,27 +67,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // enabled on the client), then resolve the matching profile before we render.
     supabase.auth.getSession().then(async ({ data }) => {
       if (!active) return
-      setSession(data.session)
-      if (data.session) setProfile(await fetchProfile(data.session.user.id))
+      const allowed = await enforceAllowed(data.session)
+      setSession(allowed)
+      if (allowed) setProfile(await fetchProfile(allowed.user.id))
       if (active) setLoading(false)
     })
 
     // React to sign-in / sign-out / token-refresh for the rest of the app lifetime.
     const { data: sub } = supabase.auth.onAuthStateChange(async (_event, next) => {
       if (!active) return
-      setSession(next)
-      setProfile(next ? await fetchProfile(next.user.id) : null)
+      const allowed = await enforceAllowed(next)
+      setSession(allowed)
+      setProfile(allowed ? await fetchProfile(allowed.user.id) : null)
       // Drop any testing override on sign-out so it never carries across accounts.
-      if (!next) setViewAsRole(null)
+      if (!allowed) setViewAsRole(null)
     })
 
     return () => {
       active = false
       sub.subscription.unsubscribe()
     }
-  }, [])
+  }, [enforceAllowed])
 
   const signInWithGoogle = useCallback(async () => {
+    setAuthError(null) // clear any prior rejection on a fresh attempt
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: window.location.origin },
@@ -96,6 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         viewAsRole,
         setViewAsRole,
         effectiveRole,
+        authError,
         signInWithGoogle,
         signOut,
       }}

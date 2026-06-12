@@ -19,7 +19,7 @@ function GoogleIcon({ className }: { className?: string }) {
 const TINT_OPACITY = 0.2
 
 export function Login() {
-  const { signInWithGoogle } = useAuth()
+  const { signInWithGoogle, authError } = useAuth()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -84,7 +84,9 @@ export function Login() {
             <GoogleIcon className="h-5 w-5" />
             {busy ? 'Redirecting…' : 'Sign in with Google'}
           </button>
-          {error && <p className="mt-3 text-center text-sm text-red-600">{error}</p>}
+          {(error || authError) && (
+            <p className="mt-3 text-center text-sm text-red-600">{error ?? authError}</p>
+          )}
         </div>
       </div>
     </div>

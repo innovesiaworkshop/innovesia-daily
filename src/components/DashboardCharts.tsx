@@ -25,11 +25,6 @@ const SLATE = '#64748b'
 
 const dayLong = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
 
-interface Member {
-  id: string
-  name: string
-}
-
 function ChartCard({ title, height, children }: { title: string; height: number; children: React.ReactElement }) {
   return (
     <Card className="p-4">
@@ -43,11 +38,9 @@ function ChartCard({ title, height, children }: { title: string; height: number;
 
 export function DashboardCharts({
   completions,
-  members,
   statusCounts,
 }: {
   completions: DailyCompletion[]
-  members: Member[]
   statusCounts: StatusCounts
 }) {
   // 1) Completions per day — all 14 day buckets, oldest → newest.
@@ -67,18 +60,9 @@ export function DashboardCharts({
     return out
   }, [completions])
 
-  // 2) Completions per person — sorted desc.
-  const perPerson = useMemo(() => {
-    const counts = new Map<string, number>()
-    for (const c of completions) {
-      if (c.pic?.id) counts.set(c.pic.id, (counts.get(c.pic.id) ?? 0) + 1)
-    }
-    return members
-      .map((m) => ({ name: m.name || 'No name', count: counts.get(m.id) ?? 0 }))
-      .sort((a, b) => b.count - a.count)
-  }, [members, completions])
-
-  // 3) Current task status — canonical status colours.
+  // 2) Current task status — canonical status colours. (Per-person throughput now lives
+  // in the Team Capacity section, framed by each person's own pace, so the raw 14-day
+  // per-person bar was dropped to avoid a contradicting count.)
   const statusData = [
     { name: 'In Progress', value: statusCounts.in_progress, color: SKY },
     { name: 'Awaiting Approval', value: statusCounts.awaiting_approval, color: GOLD },
@@ -100,18 +84,6 @@ export function DashboardCharts({
             formatter={(value) => [value as number, 'Completed']}
           />
           <Bar dataKey="count" fill={NAVY} radius={[4, 4, 0, 0]} />
-        </BarChart>
-      </ChartCard>
-
-      <ChartCard title="Completions per person · last 14 days" height={Math.max(140, perPerson.length * 36)}>
-        <BarChart data={perPerson} layout="vertical" margin={{ top: 0, right: 12, left: 0, bottom: 0 }}>
-          <XAxis type="number" allowDecimals={false} tick={axisTick} tickLine={false} axisLine={false} />
-          <YAxis type="category" dataKey="name" width={96} tick={axisTick} tickLine={false} axisLine={false} />
-          <Tooltip
-            cursor={{ fill: 'rgba(20,180,232,0.08)' }}
-            formatter={(value) => [value as number, 'Completed']}
-          />
-          <Bar dataKey="count" fill={SKY} radius={[0, 4, 4, 0]} />
         </BarChart>
       </ChartCard>
 
