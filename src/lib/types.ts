@@ -57,11 +57,14 @@ export interface TaskDetail {
   pic: { name: string } | null
 }
 
-// A row in task_files; file_path points into the private 'task-files' bucket.
+// A row in task_files: either an uploaded file (file_path into the private 'task-files'
+// bucket) or a URL link (url). file_name is the display label for both.
 export interface TaskFile {
   id: string
   task_id: string
-  file_path: string
+  kind: 'file' | 'link'
+  file_path: string | null
+  url: string | null
   file_name: string
 }
 
@@ -101,7 +104,7 @@ export interface StackItem {
   due_date: string | null
   pic: { name: string } | null
   project: { name: string } | null
-  files: { id: string; file_path: string; file_name: string }[]
+  files: TaskFile[]
 }
 
 // A task as shown on the Detail Proyek timeline (all members' tasks), with its files
@@ -115,5 +118,5 @@ export interface ProjectTask {
   // pic_id powers the inline comment permission (PIC can comment) on the timeline.
   pic_id: string
   pic: { name: string } | null
-  files: { id: string; file_path: string; file_name: string }[]
+  files: { id: string; kind: 'file' | 'link'; file_path: string | null; file_name: string }[]
 }

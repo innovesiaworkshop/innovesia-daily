@@ -17,3 +17,16 @@ export function isAllowedEmail(email?: string | null): boolean {
   const e = email?.toLowerCase() ?? ''
   return e.endsWith(ALLOWED_DOMAIN) || EMAIL_ALLOWLIST.includes(e)
 }
+
+// ── Delegate ("PA") add-on ────────────────────────────────────────────────────
+// Assistants may add agendas on behalf of the delegate target. Everyone else only
+// ever adds for themselves (the "For:" toggle is hidden for non-assistants).
+export const ASSISTANT_EMAILS = ['rafina@innovesia.co.id']
+
+export function isAssistant(email?: string | null): boolean {
+  return ASSISTANT_EMAILS.includes((email ?? '').toLowerCase())
+}
+
+// The person an assistant can file agendas for. profiles has no email column and
+// auth.users isn't client-readable, so the profile id is pinned here directly.
+export const DELEGATE_TARGET = { id: 'dd1b3d95-c455-43ef-8f73-f1d4d0c5ae77', label: 'Pak Bagus' } // Bagus, bagus@innovesia.co.id

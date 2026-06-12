@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Plus } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { useProjects, type ProjectRow } from '@/hooks/useProjects'
 
@@ -13,10 +15,34 @@ const SEGMENTS: { scope: Scope; label: string }[] = [
 export function ProyekList() {
   const navigate = useNavigate()
   const { profile, effectiveRole } = useAuth()
-  const { all, mine, loading, error } = useProjects(profile?.id)
+  const { all, mine, loading, error, refetch } = useProjects(profile?.id)
 
   // Default scope by effective role; either role can switch.
   const [scope, setScope] = useState<Scope>(effectiveRole === 'employee' ? 'mine' : 'all')
+
+  // Inline "new project" form (standalone — no task attached).
+  const [creating, setCreating] = useState(false)
+  const [newName, setNewName] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [createError, setCreateError] = useState<string | null>(null)
+
+  async function createProject() {
+    const name = newName.trim()
+    if (!profile || name.length === 0 || busy) return
+    setBusy(true)
+    setCreateError(null)
+    const { error: insErr } = await supabase
+      .from('projects')
+      .insert({ name, created_by: profile.id, archived: false })
+    setBusy(false)
+    if (insErr) {
+      setCreateError("Couldn't create project. Try again.")
+      return
+    }
+    setNewName('')
+    setCreating(false)
+    await refetch() // show it in the list immediately
+  }
 
   const rows = scope === 'mine' ? mine : all
   const openRows = rows.filter((p) => !p.archived)
@@ -40,6 +66,8 @@ export function ProyekList() {
 
   return (
     <div className="space-y-4">
+      {/* Pinned controls: scope toggle + create, frozen at the top while the list scrolls. */}
+      <div className="sticky top-2 z-10 space-y-2.5 rounded-2xl border border-white/50 bg-white/60 p-2 shadow-glass backdrop-blur-md">
       {/* Scope toggle. */}
       <div
         role="group"
@@ -62,6 +90,56 @@ export function ProyekList() {
             </button>
           )
         })}
+      </div>
+
+      {/* Standalone project creation — no task required. */}
+      {creating ? (
+        <div className="space-y-2 rounded-2xl border border-white/50 bg-white/70 p-3 shadow-glass backdrop-blur">
+          <input
+            autoFocus
+            type="text"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') void createProject()
+            }}
+            placeholder="Project name"
+            className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-navy"
+          />
+          {createError && <p className="text-sm text-red-600">{createError}</p>}
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setCreating(false)
+                setNewName('')
+                setCreateError(null)
+              }}
+              disabled={busy}
+              className="flex-1 rounded-xl border border-slate-200 py-2 text-sm font-medium text-slate-600 active:bg-slate-50 disabled:opacity-60"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => void createProject()}
+              disabled={busy || newName.trim().length === 0}
+              className="flex-1 rounded-xl bg-navy py-2 text-sm font-semibold text-white active:scale-[0.99] disabled:opacity-60"
+            >
+              {busy ? 'Creating…' : 'Create'}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setCreating(true)}
+          className="flex w-full items-center justify-center gap-1.5 rounded-2xl border border-dashed border-slate-300 py-3 text-sm font-semibold text-navy active:bg-white/60"
+        >
+          <Plus className="h-4 w-4" />
+          New project
+        </button>
+      )}
       </div>
 
       {loading && <p className="pt-6 text-center text-sm text-slate-400">Loading…</p>}

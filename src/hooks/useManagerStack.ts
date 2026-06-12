@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { todayISO } from '@/lib/dates'
-import type { StackItem } from '@/lib/types'
+import type { StackItem, TaskFile } from '@/lib/types'
 
 interface ManagerStackState {
   items: StackItem[]
@@ -21,7 +21,7 @@ interface Row {
   due_date: string | null
   pic: { name: string } | null
   project: { name: string } | null
-  files: { id: string; file_path: string; file_name: string }[]
+  files: TaskFile[]
 }
 
 // Builds the manager's "Kickstart Your Day" stack across all members: pending approvals first,
@@ -37,8 +37,9 @@ export function useManagerStack(): ManagerStackState {
       .select(
         'id, name, project_id, pic_id, status, approval_state, due_date, ' +
           'pic:profiles!tasks_pic_id_fkey(name), project:projects(name), ' +
-          'files:task_files(id, file_path, file_name)',
+          'files:task_files(id, task_id, kind, file_path, url, file_name)',
       )
+      // Load ALL attachments (files + links) so the approval card can surface every one.
       .in('status', ['awaiting_approval', 'on_progress'])
       .order('created_at', { ascending: true })
 

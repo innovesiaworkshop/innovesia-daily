@@ -10,6 +10,7 @@ import { DetailProyek } from '@/pages/DetailProyek'
 import { ProyekList } from '@/pages/ProyekList'
 import { TambahTugas } from '@/pages/TambahTugas'
 import { Dashboard } from '@/pages/Dashboard'
+import { TeamDaily } from '@/pages/TeamDaily'
 import { ReloadPrompt } from '@/components/ReloadPrompt'
 
 // Decides what to render once auth has resolved. Employees and employers share the
@@ -37,6 +38,7 @@ function Gate() {
           <Route path="proyek/:id" element={<DetailProyek />} />
           <Route path="tambah" element={<TambahTugas />} />
           <Route path="dashboard" element={<Dashboard />} />
+          <Route path="team" element={<TeamDaily />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

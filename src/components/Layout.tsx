@@ -27,6 +27,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/': 'Daily Stand-Up',
   '/tambah': 'New Agenda',
   '/proyek': 'Projects',
+  '/team': 'Team Day',
   '/dashboard': 'Dashboard',
 }
 

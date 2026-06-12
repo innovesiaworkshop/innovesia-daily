@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useOutletContext, useParams } from 'react-router-dom'
+import { useOutletContext, useParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
+import { useGoBack } from '@/hooks/useGoBack'
 import { useProjectDetail } from '@/hooks/useProjectDetail'
 import { TaskTimeline } from '@/components/TaskTimeline'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
@@ -10,7 +11,7 @@ import type { LayoutOutletContext } from '@/components/Layout'
 
 export function DetailProyek() {
   const { id } = useParams()
-  const navigate = useNavigate()
+  const goBack = useGoBack()
   const { profile, effectiveRole } = useAuth()
   const { project, tasks, loading, error, reloadProject } = useProjectDetail(id)
 
@@ -63,7 +64,7 @@ export function DetailProyek() {
         left={
           <button
             type="button"
-            onClick={() => navigate(-1)}
+            onClick={goBack}
             className="px-2 py-1 text-sm font-medium text-sky"
           >
             ← Back

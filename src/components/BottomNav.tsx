@@ -39,6 +39,16 @@ function ChartIcon({ className }: IconProps) {
   )
 }
 
+function TeamIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M16 19v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="3" />
+      <path d="M22 19v-2a4 4 0 0 0-3-3.87M16 4.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  )
+}
+
 type NavItem = {
   to: string
   label: string
@@ -51,6 +61,7 @@ const items: NavItem[] = [
   { to: '/', label: 'Agenda', Icon: HomeIcon },
   { to: '/tambah', label: 'Add', Icon: PlusIcon },
   { to: '/proyek', label: 'Projects', Icon: FolderIcon },
+  { to: '/team', label: 'Team', Icon: TeamIcon },
   { to: '/dashboard', label: 'Dashboard', Icon: ChartIcon, employerOnly: true },
 ]
 

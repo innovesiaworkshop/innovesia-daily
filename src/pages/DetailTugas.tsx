@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useOutletContext, useParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
+import { useGoBack } from '@/hooks/useGoBack'
 import { useKeyboardOpen } from '@/hooks/useKeyboardOpen'
 import { useTaskDetail } from '@/hooks/useTaskDetail'
 import { useApprovalActions } from '@/hooks/useApprovalActions'
@@ -43,6 +44,7 @@ const APPROVAL_LABEL: Record<string, string> = {
 export function DetailTugas() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const goBack = useGoBack()
   const { profile, effectiveRole } = useAuth()
   const { task, files, tags, comments, loading, error, reloadTask, reloadFiles, reloadTags, addComment } =
     useTaskDetail(id)
@@ -152,7 +154,7 @@ export function DetailTugas() {
         left={
           <button
             type="button"
-            onClick={() => navigate(-1)}
+            onClick={goBack}
             className="px-2 py-1 text-sm font-medium text-sky"
           >
             ← Back

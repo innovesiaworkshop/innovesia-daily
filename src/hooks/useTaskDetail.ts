@@ -55,7 +55,7 @@ export function useTaskDetail(taskId: string | undefined): TaskDetailHook {
     if (!taskId) return
     const { data } = await supabase
       .from('task_files')
-      .select('id, task_id, file_path, file_name')
+      .select('id, task_id, kind, file_path, url, file_name')
       .eq('task_id', taskId)
       .order('created_at', { ascending: true })
     setState((s) => ({ ...s, files: (data ?? []) as TaskFile[] }))

@@ -3,6 +3,7 @@ import useEmblaCarousel from 'embla-carousel-react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { Badge, Card, PillButton } from '@/components/ui'
+import { TaskAttachments } from '@/components/TaskAttachments'
 import { formatDueDate } from '@/lib/dates'
 import type { StackItem } from '@/lib/types'
 import type { useApprovalActions } from '@/hooks/useApprovalActions'
@@ -28,7 +29,6 @@ export function ApprovalStack({
   authorId: string
 }) {
   const [emblaRef, emblaApi] = useEmblaCarousel({ align: 'start', loop: true })
-  const [fileError, setFileError] = useState<string | null>(null)
   const [nudged, setNudged] = useState<Set<string>>(new Set())
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [snaps, setSnaps] = useState<number[]>([])
@@ -53,20 +53,6 @@ export function ApprovalStack({
       emblaApi.off('select', onSelect)
     }
   }, [emblaApi, onSelect])
-
-  async function viewFile(item: StackItem) {
-    const file = item.files[0]
-    if (!file) return
-    setFileError(null)
-    const { data, error } = await supabase.storage
-      .from('task-files')
-      .createSignedUrl(file.file_path, 60)
-    if (error || !data) {
-      setFileError("Couldn't open file. Try again.")
-      return
-    }
-    window.open(data.signedUrl, '_blank', 'noopener')
-  }
 
   async function nudge(item: StackItem) {
     await supabase.from('comments').insert({
@@ -109,15 +95,7 @@ export function ApprovalStack({
                 </p>
               )}
 
-              {item.kind === 'approval' && item.files.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => void viewFile(item)}
-                  className="mt-1.5 text-sm font-medium text-sky active:opacity-70"
-                >
-                  View file
-                </button>
-              )}
+              {item.kind === 'approval' && <TaskAttachments files={item.files} />}
 
               <div className="mt-3 flex justify-end gap-2">
                 {item.kind === 'approval' ? (
@@ -140,8 +118,6 @@ export function ApprovalStack({
         ))}
         </div>
       </div>
-
-      {fileError && <p className="mt-2 text-sm text-red-600">{fileError}</p>}
 
       {items.length > 1 && (
         <div className="mt-3 flex items-center justify-center gap-3">

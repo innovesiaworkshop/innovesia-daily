@@ -154,16 +154,18 @@ export function TaskTimeline({ tasks }: { tasks: ProjectTask[] }) {
 
                   {/* Right column: file chips, then the See-comments toggle. */}
                   <div className="flex shrink-0 flex-col items-end gap-1.5">
-                    {task.files.map((f) => (
-                      <button
-                        key={f.id}
-                        type="button"
-                        onClick={() => void openFile(f.file_path)}
-                        className="max-w-[9rem] truncate rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-sky active:bg-slate-50"
-                      >
-                        {f.file_name}
-                      </button>
-                    ))}
+                    {task.files
+                      .filter((f) => f.kind === 'file' && f.file_path)
+                      .map((f) => (
+                        <button
+                          key={f.id}
+                          type="button"
+                          onClick={() => void openFile(f.file_path!)}
+                          className="max-w-[9rem] truncate rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-sky active:bg-slate-50"
+                        >
+                          {f.file_name}
+                        </button>
+                      ))}
                     <button
                       type="button"
                       onClick={() => toggleComments(task.id)}

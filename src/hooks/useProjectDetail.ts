@@ -45,7 +45,7 @@ export function useProjectDetail(projectId: string | undefined): ProjectDetailHo
       .from('tasks')
       .select(
         'id, name, status, created_at, completed_at, pic_id, ' +
-          'pic:profiles!tasks_pic_id_fkey(name), files:task_files(id, file_path, file_name)',
+          'pic:profiles!tasks_pic_id_fkey(name), files:task_files(id, kind, file_path, file_name)',
       )
       .eq('project_id', projectId)
     setState((s) => ({ ...s, tasks: (data ?? []) as unknown as ProjectTask[] }))

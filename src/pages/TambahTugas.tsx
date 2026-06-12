@@ -2,12 +2,15 @@ import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
-import { useKeyboardOpen } from '@/hooks/useKeyboardOpen'
-import { Calendar, FileText, Folder, PencilLine, Sunrise } from 'lucide-react'
+import { useGoBack } from '@/hooks/useGoBack'
+import { useDelegate, type ForTarget } from '@/hooks/useDelegate'
+import { Calendar, CalendarCheck, CalendarDays, FileText, Folder, PencilLine, Sunrise } from 'lucide-react'
 import { ProjectPicker } from '@/components/ProjectPicker'
 import { BatchAddAgenda } from '@/components/BatchAddAgenda'
+import { ForToggle } from '@/components/ForToggle'
 import { Toggle } from '@/components/Toggle'
-import { Card, FloatingControlBar, SectionHeading } from '@/components/ui'
+import { Card, FloatingControlBar, PinnedSaveButton, SectionHeading } from '@/components/ui'
+import { todayISO } from '@/lib/dates'
 import type { Project } from '@/lib/types'
 
 // Pre-fill / linkage passed via router state (from Continue / + Revision Agenda).
@@ -21,17 +24,25 @@ interface AddState {
 export function TambahTugas() {
   const { profile } = useAuth()
   const navigate = useNavigate()
+  const goBack = useGoBack()
   const preset = (useLocation().state as AddState | null) ?? {}
 
   const [name, setName] = useState(preset.presetName ?? '')
   const [project, setProject] = useState<Project | null>(preset.presetProject ?? null)
   const [description, setDescription] = useState(preset.presetDescription ?? '')
   const [dueDate, setDueDate] = useState('')
+  // The agenda's date: defaults to today, can be backdated. Drives created_at/start_date
+  // (and completed_at when "already done"). Capped at today — no future backdating.
+  const [taskDate, setTaskDate] = useState(todayISO())
+  const [alreadyDone, setAlreadyDone] = useState(false)
 
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [batch, setBatch] = useState(false)
-  const keyboardOpen = useKeyboardOpen()
+
+  // Assistant-only: file this agenda for self or the delegate target.
+  const { isAssistant, target } = useDelegate()
+  const [forTarget, setForTarget] = useState<ForTarget>('self')
 
   async function handleSave() {
     if (saving) return
@@ -42,14 +53,25 @@ export function TambahTugas() {
     setSaving(true)
     setError(null)
 
-    // New agenda defaults to Today: DB gives status=on_progress, planned_for=today,
-    // approval_state='na'.
+    // Local-midnight timestamp of the chosen date — overrides created_at's now() default and,
+    // when "already done", doubles as completed_at (equal → cycle time = 0, never earlier).
+    const [y, m, d] = taskDate.split('-').map(Number)
+    const createdISO = new Date(y, m - 1, d).toISOString()
+    const today = todayISO()
+
+    // Backdate via created_at/start_date. Already-done → done now, sitting on the chosen day;
+    // otherwise a normal agenda planned for today so it lands in Today's Agenda.
     const { error: insErr } = await supabase.from('tasks').insert({
       name: name.trim(),
       project_id: project.id,
-      pic_id: profile.id,
+      pic_id: forTarget === 'bagus' ? target.id : profile.id,
       due_date: dueDate || null,
       description: description.trim() || null,
+      start_date: taskDate,
+      created_at: createdISO,
+      ...(alreadyDone
+        ? { status: 'done', completed_at: createdISO, planned_for: taskDate }
+        : { planned_for: today }),
     })
     if (insErr) {
       setSaving(false)
@@ -76,7 +98,7 @@ export function TambahTugas() {
         left={
           <button
             type="button"
-            onClick={() => navigate(-1)}
+            onClick={goBack}
             className="px-2 py-1 text-sm font-medium text-sky"
           >
             Cancel
@@ -101,6 +123,10 @@ export function TambahTugas() {
         <BatchAddAgenda />
       ) : (
         <>
+      {isAssistant && (
+        <ForToggle value={forTarget} onChange={setForTarget} targetLabel={target.label} />
+      )}
+
       <Card className="p-4">
         <SectionHeading label="Agenda name" icon={<PencilLine className="h-4 w-4" />} />
         <input
@@ -139,19 +165,32 @@ export function TambahTugas() {
         />
       </Card>
 
+      <Card className="p-4">
+        <SectionHeading label="Date" icon={<CalendarDays className="h-4 w-4" />} />
+        <input
+          type="date"
+          value={taskDate}
+          max={todayISO()}
+          onChange={(e) => setTaskDate(e.target.value || todayISO())}
+          className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 outline-none focus:border-navy"
+        />
+        <p className="mt-1.5 text-xs text-slate-400">Backdate to log work from an earlier day.</p>
+
+        <label className="mt-3 flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
+          <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
+            <CalendarCheck className="h-4 w-4 text-navy" />
+            Already done?
+          </span>
+          <Toggle checked={alreadyDone} onChange={setAlreadyDone} label="Already done" />
+        </label>
+        {alreadyDone && (
+          <p className="mt-1.5 text-xs text-slate-400">Saves as completed on the chosen date.</p>
+        )}
+      </Card>
+
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      {/* Pinned above the bottom nav; hidden while the keyboard is up so it doesn't
-          overlap the focused field. */}
-      {!keyboardOpen && (
-        <button
-          type="button"
-          onClick={() => void handleSave()}
-          className="absolute bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] left-1/2 z-20 w-[calc(100%-2rem)] max-w-[26rem] -translate-x-1/2 rounded-full bg-navy py-3.5 text-base font-semibold text-white shadow-pill transition active:scale-[0.99]"
-        >
-          {saving ? 'Saving…' : 'Save'}
-        </button>
-      )}
+      <PinnedSaveButton label={saving ? 'Saving…' : 'Save'} onClick={() => void handleSave()} />
         </>
       )}
     </div>

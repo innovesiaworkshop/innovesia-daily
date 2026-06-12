@@ -2,8 +2,10 @@ import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
+import { useDelegate, type ForTarget } from '@/hooks/useDelegate'
 import { ProjectPicker } from '@/components/ProjectPicker'
-import { Card, PillButton } from '@/components/ui'
+import { ForToggle } from '@/components/ForToggle'
+import { Card, PillButton, PinnedSaveButton } from '@/components/ui'
 import type { Project } from '@/lib/types'
 
 interface Row {
@@ -29,6 +31,10 @@ export function BatchAddAgenda() {
   const [rows, setRows] = useState<Row[]>([emptyRow(0), emptyRow(1), emptyRow(2)])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Assistant-only: the chosen target applies to the WHOLE batch (her whole day for him).
+  const { isAssistant, target } = useDelegate()
+  const [forTarget, setForTarget] = useState<ForTarget>('self')
 
   function patch(id: number, fields: Partial<Row>) {
     setRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...fields } : r)))
@@ -56,11 +62,12 @@ export function BatchAddAgenda() {
     }
 
     setSaving(true)
+    const picId = forTarget === 'bagus' ? target.id : profile.id
     const { error: insErr } = await supabase.from('tasks').insert(
       named.map((r) => ({
         name: r.name.trim(),
         project_id: r.project!.id,
-        pic_id: profile.id,
+        pic_id: picId,
         due_date: r.dueDate || null,
         description: r.description.trim() || null,
       })),
@@ -76,6 +83,10 @@ export function BatchAddAgenda() {
 
   return (
     <div className="flex flex-1 flex-col gap-3">
+      {isAssistant && (
+        <ForToggle value={forTarget} onChange={setForTarget} targetLabel={target.label} />
+      )}
+
       {rows.map((r) => {
         const needsProject = r.name.trim().length > 0 && !r.project
         return (
@@ -161,15 +172,12 @@ export function BatchAddAgenda() {
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      <PillButton
-        variant="primary"
-        fullWidth
+      {/* Same pinned Save pill as the single Add flow, for consistent position + styling. */}
+      <PinnedSaveButton
+        label={saving ? 'Saving…' : `Save all${named.length > 0 ? ` (${named.length})` : ''}`}
         disabled={named.length === 0 || saving}
         onClick={() => void saveAll()}
-        className="sticky bottom-[calc(env(safe-area-inset-bottom)+5rem)] z-10 mt-auto"
-      >
-        {saving ? 'Saving…' : `Save all${named.length > 0 ? ` (${named.length})` : ''}`}
-      </PillButton>
+      />
     </div>
   )
 }
