@@ -17,7 +17,7 @@ import { CommentThread } from '@/components/CommentThread'
 import { ApprovalDialogs } from '@/components/ApprovalDialogs'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { Badge, Card, FloatingControlBar, PillButton, SectionHeading } from '@/components/ui'
-import { Calendar, CircleDot, FileText, MessageSquare, Paperclip, UserPlus } from 'lucide-react'
+import { Calendar, CircleDot, FileText, MessageSquare, Paperclip, Trash2, UserPlus } from 'lucide-react'
 import type { LayoutOutletContext } from '@/components/Layout'
 
 // A section as its own glass card with an icon'd heading, so each block reads distinctly.
@@ -56,7 +56,9 @@ export function DetailTugas() {
   const [actionError, setActionError] = useState<string | null>(null)
   const keyboardOpen = useKeyboardOpen()
   const [description, setDescription] = useState('')
-  const [confirmAction, setConfirmAction] = useState<'complete' | 'ask' | 'retract' | null>(null)
+  const [confirmAction, setConfirmAction] = useState<'complete' | 'ask' | 'retract' | 'delete' | null>(
+    null,
+  )
 
   // Manager Approve / Request Revision; reloadTask refreshes the task row.
   const approval = useApprovalActions(reloadTask)
@@ -138,6 +140,18 @@ export function DetailTugas() {
         { status: 'on_progress', approval_state: 'na', planned_for: today },
         "Couldn't retract. Try again.",
       )
+    } else if (action === 'delete') {
+      if (!task) return
+      setSaving(true)
+      setActionError(null)
+      // Same delete as Home; DB cascade clears task_tags/files/comments.
+      const { error: delErr } = await supabase.from('tasks').delete().eq('id', task.id)
+      setSaving(false)
+      if (delErr) {
+        setActionError("Couldn't delete. Try again.")
+        return
+      }
+      goBack() // the record is gone — leave the detail
     }
   }
 
@@ -164,7 +178,18 @@ export function DetailTugas() {
             ← Back
           </button>
         }
-        right={null}
+        right={
+          actsAsPic ? (
+            <button
+              type="button"
+              onClick={() => setConfirmAction('delete')}
+              aria-label="Delete agenda"
+              className="grid h-8 w-8 place-items-center rounded-full text-slate-500 active:bg-white/60 active:text-red-600"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          ) : null
+        }
       />
 
       {/* Body header: project link + PIC + badges (the name lives in the app header). */}
@@ -366,11 +391,20 @@ export function DetailTugas() {
               ? 'Mark this agenda as complete?'
               : confirmAction === 'ask'
                 ? "Send for approval? You won't be able to edit until it's reviewed."
-                : 'Retract the approval request?'
+                : confirmAction === 'delete'
+                  ? "Delete this agenda? This can't be undone."
+                  : 'Retract the approval request?'
           }
           confirmLabel={
-            confirmAction === 'complete' ? 'Complete' : confirmAction === 'ask' ? 'Send' : 'Retract'
+            confirmAction === 'complete'
+              ? 'Complete'
+              : confirmAction === 'ask'
+                ? 'Send'
+                : confirmAction === 'delete'
+                  ? 'Delete'
+                  : 'Retract'
           }
+          danger={confirmAction === 'delete'}
           busy={saving}
           onConfirm={() => void runConfirm()}
           onCancel={() => setConfirmAction(null)}

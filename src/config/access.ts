@@ -21,7 +21,7 @@ export function isAllowedEmail(email?: string | null): boolean {
 // ── Delegate ("PA") add-on ────────────────────────────────────────────────────
 // Assistants may add agendas on behalf of the delegate target. Everyone else only
 // ever adds for themselves (the "For:" toggle is hidden for non-assistants).
-export const ASSISTANT_EMAILS = ['rafina@innovesia.co.id']
+export const ASSISTANT_EMAILS = ['rafina@innovesia.co.id', 'admin@innovesia.co.id']
 
 export function isAssistant(email?: string | null): boolean {
   return ASSISTANT_EMAILS.includes((email ?? '').toLowerCase())

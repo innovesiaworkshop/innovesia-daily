@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Navigate, useNavigate, useOutletContext } from 'react-router-dom'
-import { Plus, Users } from 'lucide-react'
+import { Plus, Trash2, Users } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useGoBack } from '@/hooks/useGoBack'
 import { useDelegate } from '@/hooks/useDelegate'
 import { Badge, Card, FloatingControlBar } from '@/components/ui'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { MeetingBadge } from '@/components/MeetingBadge'
 import { todayISO } from '@/lib/dates'
 import type { LayoutOutletContext } from '@/components/Layout'
@@ -44,6 +45,8 @@ export function PaBagus() {
   const [rows, setRows] = useState<Row[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<Row | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   // Drive the shared header (title only; back lives in the bar below, like the detail pages).
   const { setHeader } = useOutletContext<LayoutOutletContext>()
@@ -52,12 +55,11 @@ export function PaBagus() {
     return () => setHeader({ title: null, onBack: null })
   }, [setHeader, target.label])
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (!isAssistant) return
-    let active = true
     setLoading(true)
     setError(null)
-    supabase
+    const { data, error: err } = await supabase
       .from('tasks')
       .select(
         'id, name, status, planned_for, due_date, agenda_type, start_time, end_time, project:projects(name)',
@@ -65,16 +67,23 @@ export function PaBagus() {
       .eq('pic_id', target.id)
       .neq('status', 'done')
       .order('planned_for', { ascending: true })
-      .then(({ data, error: err }) => {
-        if (!active) return
-        if (err) setError('Couldn’t load his agenda. Try again.')
-        else setRows((data ?? []) as unknown as Row[])
-        setLoading(false)
-      })
-    return () => {
-      active = false
-    }
+    if (err) setError('Couldn’t load his agenda. Try again.')
+    else setRows((data ?? []) as unknown as Row[])
+    setLoading(false)
   }, [isAssistant, target.id])
+
+  useEffect(() => {
+    void load()
+  }, [load])
+
+  async function runDelete() {
+    if (!pendingDelete) return
+    setDeleting(true)
+    const { error: delErr } = await supabase.from('tasks').delete().eq('id', pendingDelete.id)
+    setDeleting(false)
+    setPendingDelete(null)
+    if (!delErr) void load()
+  }
 
   const today = todayISO()
   const { awaiting, todayTasks, upcoming } = useMemo(() => {
@@ -103,11 +112,15 @@ export function PaBagus() {
             const s = STATUS[t.status]
             const due = formatDue(t.due_date)
             return (
-              <button
+              <div
                 key={t.id}
-                type="button"
+                role="button"
+                tabIndex={0}
                 onClick={() => navigate(`/tugas/${t.id}`)}
-                className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left transition active:bg-white/50"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') navigate(`/tugas/${t.id}`)
+                }}
+                className="flex w-full cursor-pointer items-center justify-between gap-3 px-4 py-2.5 text-left transition active:bg-white/50"
               >
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm text-slate-800">{t.name}</span>
@@ -122,8 +135,21 @@ export function PaBagus() {
                     className="mt-1"
                   />
                 </span>
-                <Badge tone={s.tone}>{s.label}</Badge>
-              </button>
+                <span className="flex shrink-0 items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setPendingDelete(t)
+                    }}
+                    aria-label={`Delete ${t.name}`}
+                    className="grid h-7 w-7 place-items-center rounded-lg text-slate-400 transition active:scale-90 active:bg-red-50 active:text-red-600"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                  <Badge tone={s.tone}>{s.label}</Badge>
+                </span>
+              </div>
             )
           })}
         </Card>
@@ -174,6 +200,17 @@ export function PaBagus() {
           <Section label="Today" items={todayTasks} />
           <Section label="Upcoming" items={upcoming} />
         </>
+      )}
+
+      {pendingDelete && (
+        <ConfirmDialog
+          title="Delete this agenda? This can't be undone."
+          confirmLabel="Delete"
+          danger
+          busy={deleting}
+          onConfirm={() => void runDelete()}
+          onCancel={() => setPendingDelete(null)}
+        />
       )}
     </div>
   )
