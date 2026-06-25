@@ -8,6 +8,7 @@ import { useMyTasks } from '@/hooks/useMyTasks'
 import { useManagerStack } from '@/hooks/useManagerStack'
 import { useApprovalActions } from '@/hooks/useApprovalActions'
 import { TaskCard } from '@/components/TaskCard'
+import { AgendaTypeFilter, matchesFilter, type AgendaFilter } from '@/components/AgendaTypeFilter'
 import { Invitations } from '@/components/Invitations'
 import { AwaitingApprovalCard } from '@/components/AwaitingApprovalCard'
 import { ApprovalStack } from '@/components/ApprovalStack'
@@ -48,6 +49,8 @@ export function TugasSaya() {
   const [todayOpen, setTodayOpen] = useState(true)
   const [allOpen, setAllOpen] = useState(false)
   const [showAllDone, setShowAllDone] = useState(false)
+  // Filter the Today / All Agenda lists by type (All / Agenda / Meeting).
+  const [typeFilter, setTypeFilter] = useState<AgendaFilter>('all')
   // A pending confirm: either completing an agenda or deleting it.
   const [pending, setPending] = useState<{ task: TaskWithProject; kind: 'complete' | 'delete' } | null>(
     null,
@@ -105,6 +108,10 @@ export function TugasSaya() {
     )
     return { approval, todayTasks, backlog, doneToday, allDone }
   }, [tasks, today])
+
+  // The Today / All Agenda lists, narrowed by the type filter.
+  const todayFiltered = todayTasks.filter((t) => matchesFilter(t.agenda_type, typeFilter))
+  const backlogFiltered = backlog.filter((t) => matchesFilter(t.agenda_type, typeFilter))
 
   async function setPlannedFor(task: TaskWithProject, value: string | null) {
     setActionError(null)
@@ -236,14 +243,17 @@ export function TugasSaya() {
                 ))}
             </section>
 
+            {/* Type filter — applies to Today's + All Agenda below. */}
+            <AgendaTypeFilter value={typeFilter} onChange={setTypeFilter} />
+
             {/* Today's Agenda — peek-collapsible. */}
             <section id="home-today" className="scroll-mt-4">
               <SectionHeading
                 label="Today's Agenda"
-                count={todayTasks.length}
+                count={todayFiltered.length}
                 icon={<Calendar className="h-4 w-4" />}
                 action={
-                  todayTasks.length > 1 ? (
+                  todayFiltered.length > 1 ? (
                     <button
                       type="button"
                       onClick={() => setTodayOpen((o) => !o)}
@@ -258,9 +268,9 @@ export function TugasSaya() {
                   ) : undefined
                 }
               />
-              {todayTasks.length > 0 ? (
+              {todayFiltered.length > 0 ? (
                 <div className="space-y-3">
-                  {(todayOpen ? todayTasks : todayTasks.slice(0, 1)).map((t) => {
+                  {(todayOpen ? todayFiltered : todayFiltered.slice(0, 1)).map((t) => {
                     // Meetings I only attend (not own) are read-only — no actions.
                     const owned = t.pic_id === profile?.id
                     return (
@@ -281,13 +291,13 @@ export function TugasSaya() {
               ) : (
                 <p className="text-sm text-slate-400">Nothing here yet.</p>
               )}
-              {todayTasks.length > 1 && (
+              {todayFiltered.length > 1 && (
                 <button
                   type="button"
                   onClick={() => setTodayOpen((o) => !o)}
                   className="mt-2 text-sm font-medium text-sky"
                 >
-                  {todayOpen ? 'Show less' : `Show all (${todayTasks.length})`}
+                  {todayOpen ? 'Show less' : `Show all (${todayFiltered.length})`}
                 </button>
               )}
             </section>
@@ -296,10 +306,10 @@ export function TugasSaya() {
             <section id="home-all" className="scroll-mt-4">
               <SectionHeading
                 label="All Agenda"
-                count={backlog.length}
+                count={backlogFiltered.length}
                 icon={<ListTodo className="h-4 w-4" />}
                 action={
-                  backlog.length > 1 ? (
+                  backlogFiltered.length > 1 ? (
                     <button
                       type="button"
                       onClick={() => setAllOpen((o) => !o)}
@@ -314,9 +324,9 @@ export function TugasSaya() {
                   ) : undefined
                 }
               />
-              {backlog.length > 0 ? (
+              {backlogFiltered.length > 0 ? (
                 <div className="space-y-3">
-                  {(allOpen ? backlog : backlog.slice(0, 1)).map((t) => {
+                  {(allOpen ? backlogFiltered : backlogFiltered.slice(0, 1)).map((t) => {
                     const owned = t.pic_id === profile?.id
                     return (
                       <TaskCard
@@ -336,13 +346,13 @@ export function TugasSaya() {
               ) : (
                 <p className="text-sm text-slate-400">Nothing here yet.</p>
               )}
-              {backlog.length > 1 && (
+              {backlogFiltered.length > 1 && (
                 <button
                   type="button"
                   onClick={() => setAllOpen((o) => !o)}
                   className="mt-2 text-sm font-medium text-sky"
                 >
-                  {allOpen ? 'Show less' : `Show all (${backlog.length})`}
+                  {allOpen ? 'Show less' : `Show all (${backlogFiltered.length})`}
                 </button>
               )}
             </section>

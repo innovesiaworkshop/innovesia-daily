@@ -6,6 +6,7 @@ import { useGoBack } from '@/hooks/useGoBack'
 import { useDelegate } from '@/hooks/useDelegate'
 import { Badge, Card, FloatingControlBar } from '@/components/ui'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { AgendaTypeFilter, matchesFilter, type AgendaFilter } from '@/components/AgendaTypeFilter'
 import { MeetingBadge } from '@/components/MeetingBadge'
 import { todayISO } from '@/lib/dates'
 import type { LayoutOutletContext } from '@/components/Layout'
@@ -47,6 +48,7 @@ export function PaBagus() {
   const [error, setError] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<Row | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [typeFilter, setTypeFilter] = useState<AgendaFilter>('all')
 
   // Drive the shared header (title only; back lives in the bar below, like the detail pages).
   const { setHeader } = useOutletContext<LayoutOutletContext>()
@@ -88,11 +90,14 @@ export function PaBagus() {
   const today = todayISO()
   const { awaiting, todayTasks, upcoming } = useMemo(() => {
     const awaiting = rows.filter((r) => r.status === 'awaiting_approval')
-    const onProgress = rows.filter((r) => r.status === 'on_progress')
+    // Today / Upcoming honor the type filter (All / Agenda / Meeting).
+    const onProgress = rows.filter(
+      (r) => r.status === 'on_progress' && matchesFilter(r.agenda_type, typeFilter),
+    )
     const todayTasks = onProgress.filter((r) => r.planned_for != null && r.planned_for <= today)
     const upcoming = onProgress.filter((r) => r.planned_for == null || r.planned_for > today)
     return { awaiting, todayTasks, upcoming }
-  }, [rows, today])
+  }, [rows, today, typeFilter])
 
   // Direct-URL guard for non-delegates (the Home card is the only entry point).
   if (!isAssistant) return <Navigate to="/" replace />
@@ -181,6 +186,8 @@ export function PaBagus() {
         <h2 className="text-xl font-bold tracking-tight text-slate-900">{target.label}</h2>
         <p className="text-sm text-slate-500">Manage his agenda — add, schedule, and edit.</p>
       </div>
+
+      <AgendaTypeFilter value={typeFilter} onChange={setTypeFilter} />
 
       {loading && <p className="pt-6 text-center text-sm text-slate-400">Loading…</p>}
       {error && <p className="pt-6 text-center text-sm text-red-600">{error}</p>}
