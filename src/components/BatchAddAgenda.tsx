@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useDelegate, type ForTarget } from '@/hooks/useDelegate'
 import { ProjectPicker } from '@/components/ProjectPicker'
 import { ForToggle } from '@/components/ForToggle'
+import { ensureGeneralProjectId } from '@/lib/generalProject'
 import { Card, PillButton, PinnedSaveButton } from '@/components/ui'
 import type { Project } from '@/lib/types'
 
@@ -51,22 +52,21 @@ export function BatchAddAgenda() {
   async function saveAll() {
     if (!profile || named.length === 0 || saving) return
     setError(null)
+    setSaving(true)
 
-    // Every agenda needs a project — flag + open any named row that's missing one.
-    const missing = named.filter((r) => !r.project)
-    if (missing.length > 0) {
-      setError('Each agenda needs a project.')
-      const ids = new Set(missing.map((r) => r.id))
-      setRows((rs) => rs.map((r) => (ids.has(r.id) ? { ...r, open: true } : r)))
+    // Rows without a project fall back to the shared "General" project (reassignable later).
+    const generalId = named.some((r) => !r.project) ? await ensureGeneralProjectId(profile.id) : null
+    if (named.some((r) => !r.project) && !generalId) {
+      setSaving(false)
+      setError("Couldn't save. Try again.")
       return
     }
 
-    setSaving(true)
     const picId = forTarget === 'bagus' ? target.id : profile.id
     const { error: insErr } = await supabase.from('tasks').insert(
       named.map((r) => ({
         name: r.name.trim(),
-        project_id: r.project!.id,
+        project_id: r.project?.id ?? generalId,
         pic_id: picId,
         due_date: r.dueDate || null,
         description: r.description.trim() || null,
@@ -88,7 +88,6 @@ export function BatchAddAgenda() {
       )}
 
       {rows.map((r) => {
-        const needsProject = r.name.trim().length > 0 && !r.project
         return (
           <Card key={r.id} className="p-3">
             <div className="flex items-center gap-2">
@@ -123,16 +122,9 @@ export function BatchAddAgenda() {
               )}
             </div>
 
-            {/* Project is always visible (required per row), right after the name. */}
+            {/* Project (optional) — blank rows go to "General". */}
             <div className="mt-2.5">
-              <div className="mb-1.5 flex items-center justify-between gap-2">
-                <label className="text-xs font-medium text-slate-600">Project</label>
-                {needsProject && (
-                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
-                    Project required
-                  </span>
-                )}
-              </div>
+              <label className="mb-1.5 block text-xs font-medium text-slate-600">Project (optional)</label>
               <ProjectPicker value={r.project} onChange={(p) => patch(r.id, { project: p })} />
             </div>
 

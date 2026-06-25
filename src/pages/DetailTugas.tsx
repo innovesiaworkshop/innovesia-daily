@@ -12,13 +12,15 @@ import { AgendaStatus, type AgendaStatusKey } from '@/components/AgendaStatus'
 import { TaskFiles } from '@/components/TaskFiles'
 import { MeetingBadge } from '@/components/MeetingBadge'
 import { MeetingInvitees } from '@/components/MeetingInvitees'
+import { ProjectPicker } from '@/components/ProjectPicker'
 import { TagRekan } from '@/components/TagRekan'
 import { CommentThread } from '@/components/CommentThread'
 import { ApprovalDialogs } from '@/components/ApprovalDialogs'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { Badge, Card, FloatingControlBar, PillButton, SectionHeading } from '@/components/ui'
-import { Calendar, CircleDot, FileText, MessageSquare, Paperclip, Trash2, UserPlus } from 'lucide-react'
+import { Calendar, CircleDot, FileText, Folder, MessageSquare, Paperclip, Trash2, UserPlus } from 'lucide-react'
 import type { LayoutOutletContext } from '@/components/Layout'
+import type { Project } from '@/lib/types'
 
 // A section as its own glass card with an icon'd heading, so each block reads distinctly.
 function Field({
@@ -67,6 +69,12 @@ export function DetailTugas() {
   useEffect(() => {
     setDescription(task?.description ?? '')
   }, [task?.id, task?.description])
+
+  // Local mirror of the task's project for the editable Project picker.
+  const [projectValue, setProjectValue] = useState<Project | null>(null)
+  useEffect(() => {
+    setProjectValue(task ? { id: task.project_id, name: task.project?.name ?? '' } : null)
+  }, [task?.project_id, task?.project?.name])
 
   // Surface the agenda name as the shared app header title (cleared on leave). Back lives in
   // the FloatingControlBar below — matching the project timeline — not the header chevron.
@@ -243,6 +251,21 @@ export function DetailTugas() {
             </div>
           )}
         </div>
+      )}
+
+      {/* Project — reassignable by the PIC/delegate (e.g. move out of "General"). */}
+      {canEdit && (
+        <Field label="Project" icon={<Folder className="h-4 w-4" />}>
+          <ProjectPicker
+            value={projectValue}
+            onChange={(p) => {
+              setProjectValue(p)
+              if (p && p.id !== task.project_id) {
+                void patch({ project_id: p.id }, "Couldn't update project. Try again.")
+              }
+            }}
+          />
+        </Field>
       )}
 
       {/* Status — editable control or read-only label. */}

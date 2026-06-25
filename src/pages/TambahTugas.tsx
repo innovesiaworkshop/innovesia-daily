@@ -12,6 +12,7 @@ import { StagedTags } from '@/components/StagedTags'
 import { StagedFiles, type StagedFile } from '@/components/StagedFiles'
 import { Toggle } from '@/components/Toggle'
 import { Card, FloatingControlBar, PinnedSaveButton, SectionHeading } from '@/components/ui'
+import { ensureGeneralProjectId } from '@/lib/generalProject'
 import { todayISO } from '@/lib/dates'
 import type { AgendaType, Project } from '@/lib/types'
 
@@ -62,8 +63,8 @@ export function TambahTugas() {
 
   async function handleSave() {
     if (saving) return
-    if (!profile || !project || name.trim().length === 0) {
-      setError('Add an agenda name and pick a project first.')
+    if (!profile || name.trim().length === 0) {
+      setError('Add an agenda name first.')
       return
     }
     if (agendaType === 'meeting' && startTime && endTime && endTime < startTime) {
@@ -72,6 +73,14 @@ export function TambahTugas() {
     }
     setSaving(true)
     setError(null)
+
+    // No project picked → park it in the shared "General" project (reassignable later).
+    const projectId = project?.id ?? (await ensureGeneralProjectId(profile.id))
+    if (!projectId) {
+      setSaving(false)
+      setError("Couldn't save. Try again.")
+      return
+    }
 
     const today = todayISO()
     const isFuture = taskDate > today
@@ -101,7 +110,7 @@ export function TambahTugas() {
       .from('tasks')
       .insert({
         name: name.trim(),
-        project_id: project.id,
+        project_id: projectId,
         pic_id: picId,
         due_date: dueDate || null,
         description: description.trim() || null,
@@ -228,7 +237,7 @@ export function TambahTugas() {
       </Card>
 
       <Card className="p-4">
-        <SectionHeading label="Project" icon={<Folder className="h-4 w-4" />} />
+        <SectionHeading label="Project (optional)" icon={<Folder className="h-4 w-4" />} />
         <ProjectPicker value={project} onChange={setProject} />
       </Card>
 
