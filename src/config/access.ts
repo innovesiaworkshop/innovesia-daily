@@ -10,7 +10,7 @@
 export const ALLOWED_DOMAIN = '@innovesia.co.id'
 
 // Explicit external exceptions (outside the company domain) that are still allowed in.
-export const EMAIL_ALLOWLIST = ['akrom4412@gmail.com', 'aileenppermana@gmail.com']
+export const EMAIL_ALLOWLIST = ['akrom4412@gmail.com', 'aileenppermana@gmail.com', 'johanessoe@gmail.com']
 
 // True if the email is on the company domain or in the explicit allowlist.
 export function isAllowedEmail(email?: string | null): boolean {
