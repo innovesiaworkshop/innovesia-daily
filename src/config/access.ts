@@ -10,7 +10,7 @@
 export const ALLOWED_DOMAIN = '@innovesia.co.id'
 
 // Explicit external exceptions (outside the company domain) that are still allowed in.
-export const EMAIL_ALLOWLIST = ['akrom4412@gmail.com', 'aileenppermana@gmail.com', 'johanessoe@gmail.com']
+export const EMAIL_ALLOWLIST = ['akrom4412@gmail.com', 'aileenppermana@gmail.com', 'johanessoe@gmail.com', 'farasidya@gmail.com']
 
 // True if the email is on the company domain or in the explicit allowlist.
 export function isAllowedEmail(email?: string | null): boolean {
@@ -21,7 +21,7 @@ export function isAllowedEmail(email?: string | null): boolean {
 // ── Delegate ("PA") add-on ────────────────────────────────────────────────────
 // Assistants may add agendas on behalf of the delegate target. Everyone else only
 // ever adds for themselves (the "For:" toggle is hidden for non-assistants).
-export const ASSISTANT_EMAILS = ['rafina@innovesia.co.id', 'admin@innovesia.co.id']
+export const ASSISTANT_EMAILS = ['rafina@innovesia.co.id', 'admin@innovesia.co.id', 'farasidya@gmail.com']
 
 export function isAssistant(email?: string | null): boolean {
   return ASSISTANT_EMAILS.includes((email ?? '').toLowerCase())
