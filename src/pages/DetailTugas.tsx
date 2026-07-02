@@ -7,7 +7,7 @@ import { useCanActAsPic } from '@/hooks/useDelegate'
 import { useKeyboardOpen } from '@/hooks/useKeyboardOpen'
 import { useTaskDetail } from '@/hooks/useTaskDetail'
 import { useApprovalActions } from '@/hooks/useApprovalActions'
-import { isOverdue, todayISO } from '@/lib/dates'
+import { formatTimestampDate, isOverdue, localDateISO, todayISO } from '@/lib/dates'
 import { AgendaStatus, type AgendaStatusKey } from '@/components/AgendaStatus'
 import { TaskFiles } from '@/components/TaskFiles'
 import { MeetingBadge } from '@/components/MeetingBadge'
@@ -18,7 +18,7 @@ import { CommentThread } from '@/components/CommentThread'
 import { ApprovalDialogs } from '@/components/ApprovalDialogs'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { Badge, Card, FloatingControlBar, PillButton, SectionHeading } from '@/components/ui'
-import { Calendar, CircleDot, FileText, Folder, MessageSquare, Paperclip, Trash2, UserPlus } from 'lucide-react'
+import { Calendar, CalendarCheck, CircleDot, FileText, Folder, MessageSquare, Paperclip, Trash2, UserPlus } from 'lucide-react'
 import type { LayoutOutletContext } from '@/components/Layout'
 import type { Project } from '@/lib/types'
 
@@ -286,6 +286,33 @@ export function DetailTugas() {
           </>
         )}
       </Field>
+
+      {/* Completed on — editable so a done agenda can be backdated to when it actually finished. */}
+      {task.status === 'done' && (
+        <Field label="Completed on" icon={<CalendarCheck className="h-4 w-4" />}>
+          {canEdit ? (
+            <input
+              type="date"
+              value={task.completed_at ? localDateISO(task.completed_at) : today}
+              max={today}
+              disabled={saving}
+              onChange={(e) => {
+                const v = e.target.value
+                if (!v) return
+                // Store as local-midnight of the chosen day (matches how new-agenda backdates).
+                const [y, m, d] = v.split('-').map(Number)
+                const iso = new Date(y, m - 1, d).toISOString()
+                void patch({ completed_at: iso }, "Couldn't update completion date. Try again.")
+              }}
+              className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 outline-none focus:border-navy disabled:opacity-60"
+            />
+          ) : (
+            <p className="text-sm text-slate-700">
+              {task.completed_at ? formatTimestampDate(task.completed_at) : '—'}
+            </p>
+          )}
+        </Field>
+      )}
 
       {/* Due date */}
       <Field label="Due" icon={<Calendar className="h-4 w-4" />}>

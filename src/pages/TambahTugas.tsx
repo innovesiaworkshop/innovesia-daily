@@ -306,7 +306,12 @@ export function TambahTugas() {
           value={taskDate}
           // Completed work can't be in the future; an open task can be scheduled ahead.
           max={alreadyDone ? todayISO() : undefined}
-          onChange={(e) => setTaskDate(e.target.value || todayISO())}
+          onChange={(e) => {
+            const next = e.target.value || todayISO()
+            setTaskDate(next)
+            // Picking a past date means this was already done on that day — default to completed.
+            if (next < todayISO()) setAlreadyDone(true)
+          }}
           className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 outline-none focus:border-navy"
         />
         <p className="mt-1.5 text-xs text-slate-400">
